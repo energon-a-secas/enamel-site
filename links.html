@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Framed-page guard (CONTRACTS.md C15 A36, which replaced C5.3's buster).
+       GitHub Pages sets no response header and a meta CSP cannot carry
+       frame-ancestors, so framing cannot be prevented here. This marks the
+       document instead. It attempts no navigation, so nothing throws, and
+       css/frame.css plus js/frame.js put a notice in place of the page.
+       embed.html carries none of this: being framed is its whole purpose. -->
+  <script>if (window.top !== window.self) document.documentElement.dataset.framed = 'on';</script>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://clerk.neorgon.com https://challenges.cloudflare.com https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://*.convex.cloud https://cdn.neorgon.org https://img.clerk.com https://images.credly.com https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://clerk.neorgon.com https://accounts.neorgon.com https://clerk-telemetry.com https://api.clerk.com https://challenges.cloudflare.com https://neorgon.goatcounter.com https://cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https://clerk.neorgon.com https://accounts.neorgon.com https://sash.neorgon.com https://enamel.neorgon.com; worker-src 'self' blob:">
+  <meta name="neo-convex-url" content="https://cool-puma-781.convex.cloud">
+  <meta name="clerk-publishable-key" content="pk_live_Y2xlcmsubmVvcmdvbi5jb20k">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Enamel">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="neo-mark" content="on">
+  <title>Enamel | Claim links and who claimed them</title>
+  <meta name="description" content="Mint a claim link with an expiry and a seat limit, watch the seats go, and withdraw the link when you are done">
+  <meta property="og:title" content="Enamel: claim links">
+  <meta property="og:description" content="Mint a link with an expiry and a seat limit, see who claimed, withdraw it">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://enamel.neorgon.com/links.html">
+  <meta property="og:site_name" content="Neorgon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Enamel: claim links">
+  <meta name="twitter:description" content="Mint a link with an expiry and a seat limit, see who claimed, withdraw it">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://enamel.neorgon.com/links.html">
+  <meta property="og:locale" content="en_US">
+  <meta name="theme-color" content="#040714">
+  <meta property="og:image" content="https://enamel.neorgon.com/og-preview.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Enamel">
+  <meta name="twitter:image" content="https://enamel.neorgon.com/og-preview.jpg">
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/frame.css">
+  <link rel="stylesheet" href="css/neorgon-insignia.css">
+  <script>(function(){var m=location.search.match(/[?&]theme=([\w-]+)/)||document.cookie.match(/(?:^|;\s*)neo_theme=([\w-]+)/);if(m&&m[1]!=='default')document.documentElement.dataset.theme=decodeURIComponent(m[1]);})();</script>
+  <link rel="stylesheet" href="css/neorgon-header.css">
+  <link rel="stylesheet" href="css/neorgon-themes.css">
+  <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/header/season.css">
+  <script defer src="js/neorgon-header.js"></script>
+  <link rel="stylesheet" href="css/neorgon-footer.css">
+  <script defer src="js/neorgon-footer.js"></script>
+  <meta name="beacon-site" content="enamel-site">
+  <link rel="stylesheet" href="css/neorgon-beacon.css">
+  <script defer src="js/neorgon-beacon.js"></script>
+  <meta name="neo-updated" content="updated Sep 2026">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Enamel claim links",
+    "description": "Mint a claim link with an expiry and a seat limit, see who claimed it, and withdraw it.",
+    "url": "https://enamel.neorgon.com/links.html",
+    "isPartOf": { "@type": "WebSite", "name": "Enamel", "url": "https://enamel.neorgon.com/" }
+  }
+  </script>
+</head>
+<body data-page="links">
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="header-bar" data-header-mode="app" data-header-skin="ember">
+    <div class="header-logo">
+      <a href="./" class="header-title-link">
+        <img src="https://cdn.neorgon.org/v1.0.0/energon-classic-logo.png" class="header-logo-img" alt="">
+        <div class="header-title-wrap">
+          <h1>Enamel</h1>
+          <div class="header-subtitle">Badge and certificate studio</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="header-right">
+      <div class="header-actions">
+        <a class="btn btn--ghost btn--sm" href="./">Studio</a>
+        <a class="btn btn--ghost btn--sm" href="templates.html" data-keep-mobile>Templates</a>
+      </div>
+
+      <button class="auth-toggle" id="authToggle" aria-label="Account" aria-expanded="false" aria-controls="authPanel" data-keep-mobile>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M6 19c1.2-3 3.5-4 6-4s4.8 1 6 4"/>
+        </svg>
+      </button>
+
+      <a class="header-home" href="https://neorgon.com/" title="neorgon.com" aria-label="Neorgon home">
+        <svg class="nh-hub-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 4.4 18.58 8.2 18.58 15.8 12 19.6 5.42 15.8 5.42 8.2Z" fill="currentColor" stroke="none"/>
+          <g class="nh-orbit">
+            <path d="M2.47 17.50 A11.0 11.0 0 0 1 14.85 1.37" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <path d="M21.53 6.50 A11.0 11.0 0 0 1 9.15 22.63" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+            <circle cx="21.71" cy="6.84" r="1.25" fill="currentColor"/>
+            <circle cx="2.29" cy="17.16" r="1.25" fill="currentColor"/>
+          </g>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="auth-panel" id="authPanel">
+    <div class="auth-panel-inner">
+      <div id="authGate">
+        <div id="neorgon-signin-mount" class="neorgon-clerk-mount"></div>
+        <p class="auth-error" id="authError" hidden></p>
+      </div>
+      <div id="authUser" hidden>
+        <span class="auth-username" id="authUsername"></span>
+        <div id="neorgon-user-mount" class="neorgon-clerk-mount"></div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-divider"></div>
+
+  <main id="main">
+    <div class="container stack">
+
+      <section class="section" aria-labelledby="links-title">
+        <div class="section__header">
+          <div class="section__titles">
+            <h2 class="section__title" id="links-title">Claim links</h2>
+            <p class="section__lead" id="linksLead">
+              A claim link is a bearer token. Anyone holding it can take a seat until it
+              expires, runs out of seats, or you withdraw it.
+            </p>
+          </div>
+          <div class="toolbar" id="templateSwitch"></div>
+        </div>
+
+        <div id="signedOut" class="notice" hidden>
+          <p>Sign in to mint a claim link and see who has claimed.</p>
+          <button type="button" class="btn btn--primary btn--sm" id="signInBtn">Sign in</button>
+        </div>
+
+        <div id="templateHead"></div>
+      </section>
+
+      <section class="section" id="mintSection" aria-labelledby="mint-title" hidden>
+        <div class="section__titles">
+          <h2 class="section__title" id="mint-title">Mint a link</h2>
+        </div>
+        <div class="card">
+          <div class="mint-grid">
+            <label class="fld">
+              <span class="fld__label">Expires</span>
+              <select class="fld__input" id="mintExpiry">
+                <option value="1">In a day</option>
+                <option value="7" selected>In a week</option>
+                <option value="30">In a month</option>
+                <option value="90">In three months</option>
+                <option value="365">In a year</option>
+              </select>
+            </label>
+            <label class="fld">
+              <span class="fld__label">Seats</span>
+              <input class="fld__input" id="mintSeats" type="number" min="1" step="1" placeholder="Leave empty for no limit">
+            </label>
+            <label class="fld fld--wide">
+              <span class="fld__label">Only these handles</span>
+              <input class="fld__input" id="mintAllow" placeholder="Leave empty to let anyone with the link claim" spellcheck="false" autocomplete="off">
+              <span class="fld__hint">Comma separated. A handle not on the list is refused at claim time.</span>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button type="button" class="btn btn--primary btn--sm" id="mintBtn">Mint link</button>
+            <span class="fld__hint" id="mintHint"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="listSection" aria-labelledby="list-title" hidden>
+        <div class="section__titles">
+          <h2 class="section__title" id="list-title">Issued links</h2>
+        </div>
+        <div id="linkList" class="stack stack--tight"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="neo-footer" data-footer-mode="app">
+    Withdrawing a link stops new claims. Badges already claimed from it stay valid.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

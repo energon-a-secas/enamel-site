@@ -1,5 +1,11 @@
 // ── Event handlers ───────────────────────────────────────────
-// All event listeners and user interaction handlers.
+// Document-level wiring every page shares: the modal shell and its focus trap.
+// Page-specific listeners live with the page controller that owns them.
+//
+// There is no inline onclick anywhere in this project and nothing here is
+// exposed on window for one. Listeners are bound in JavaScript, which is the
+// fleet rule and also what keeps the CSP's 'unsafe-inline' limited to the two
+// head scripts C13.4 names.
 
 /** @param {HTMLElement} root */
 function getFocusable(root) {
@@ -82,13 +88,8 @@ function onModalClick(e) {
   if (t.closest('[data-modal-close]')) closeModal(modal.id);
 }
 
-/** Bind all event listeners. Call once from app.js after render. */
-export function bindEvents(_state) {
+/** Bind the listeners every page shares. Call once, from app.js. */
+export function bindEvents() {
   document.addEventListener('keydown', onDocumentKeydown);
   document.addEventListener('click', onModalClick);
-
-  document.getElementById('openDemoModal')?.addEventListener('click', () => openModal('demoModal'));
 }
-
-// If the HTML uses inline onclick="fn()" attributes, expose them:
-// window.myAction = function myAction() { ... };

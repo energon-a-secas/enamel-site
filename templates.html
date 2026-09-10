@@ -11,9 +11,6 @@
        embed.html carries none of this: being framed is its whole purpose. -->
   <script>if (window.top !== window.self) document.documentElement.dataset.framed = 'on';</script>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://clerk.neorgon.com https://challenges.cloudflare.com https://gc.zgo.at https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.neorgon.org https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: https://*.convex.cloud https://cdn.neorgon.org https://img.clerk.com https://images.credly.com https://neorgon.goatcounter.com; connect-src 'self' https://*.convex.cloud https://clerk.neorgon.com https://accounts.neorgon.com https://clerk-telemetry.com https://api.clerk.com https://challenges.cloudflare.com https://neorgon.goatcounter.com https://cloudflareinsights.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src 'self' https://challenges.cloudflare.com https://clerk.neorgon.com https://accounts.neorgon.com https://sash.neorgon.com https://enamel.neorgon.com; worker-src 'self' blob:">
-  <!-- C8.2. The deployment URL lives in the shipped page, so a mismatch between
-       the two sites is a grep rather than a code review. js/convex.js reads it
-       and throws on load when it is absent. -->
   <meta name="neo-convex-url" content="https://cool-puma-781.convex.cloud">
   <meta name="clerk-publishable-key" content="pk_live_Y2xlcmsubmVvcmdvbi5jb20k">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -22,18 +19,18 @@
   <meta name="apple-mobile-web-app-title" content="Enamel">
   <link rel="manifest" href="/site.webmanifest">
   <meta name="neo-mark" content="on">
-  <title>Enamel | Badge and certificate studio</title>
-  <meta name="description" content="Design a badge or a certificate from a preset, save versions, publish it, and hand it out with claim links that expire">
-  <meta property="og:title" content="Enamel: badge and certificate studio">
-  <meta property="og:description" content="Design it, version it, publish it, hand it out with a link that expires">
+  <title>Enamel | Your templates and their versions</title>
+  <meta name="description" content="Every template you have made, the versions you published, and the state each one is in">
+  <meta property="og:title" content="Enamel: your templates">
+  <meta property="og:description" content="Every template you have made and the versions you published">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://enamel.neorgon.com/">
+  <meta property="og:url" content="https://enamel.neorgon.com/templates.html">
   <meta property="og:site_name" content="Neorgon">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Enamel: badge and certificate studio">
-  <meta name="twitter:description" content="Design it, version it, publish it, hand it out with a link that expires">
+  <meta name="twitter:title" content="Enamel: your templates">
+  <meta name="twitter:description" content="Every template you have made and the versions you published">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://enamel.neorgon.com/">
+  <link rel="canonical" href="https://enamel.neorgon.com/templates.html">
   <meta property="og:locale" content="en_US">
   <meta name="theme-color" content="#040714">
   <meta property="og:image" content="https://enamel.neorgon.com/og-preview.jpg">
@@ -41,12 +38,10 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Enamel">
   <meta name="twitter:image" content="https://enamel.neorgon.com/og-preview.jpg">
-  <!-- Fleet design tokens: canonical, do not redeclare locally (PROJECTS.md section 5) -->
   <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/frame.css">
   <link rel="stylesheet" href="css/neorgon-insignia.css">
-  <!-- Neorgon Header Kit (vendored; ?header=live swaps CSS to CDN). Keep after style.css, the kit owns the header. -->
   <script>(function(){var m=location.search.match(/[?&]theme=([\w-]+)/)||document.cookie.match(/(?:^|;\s*)neo_theme=([\w-]+)/);if(m&&m[1]!=='default')document.documentElement.dataset.theme=decodeURIComponent(m[1]);})();</script>
   <link rel="stylesheet" href="css/neorgon-header.css">
   <link rel="stylesheet" href="css/neorgon-themes.css">
@@ -61,18 +56,15 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Enamel",
-    "description": "A studio for designing parody badges and certificates, versioning them, and issuing them with expiring claim links.",
-    "url": "https://enamel.neorgon.com/",
-    "applicationCategory": "DesignApplication",
-    "operatingSystem": "Any",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "author": { "@type": "Organization", "name": "Neorgon", "url": "https://neorgon.com/" }
+    "@type": "WebPage",
+    "name": "Enamel templates",
+    "description": "Every template you have made, the versions you published, and the state each one is in.",
+    "url": "https://enamel.neorgon.com/templates.html",
+    "isPartOf": { "@type": "WebSite", "name": "Enamel", "url": "https://enamel.neorgon.com/" }
   }
   </script>
 </head>
-<body data-page="studio">
+<body data-page="library">
 
   <a class="skip-link" href="#main">Skip to content</a>
 
@@ -89,8 +81,8 @@
 
     <div class="header-right">
       <div class="header-actions">
-        <a class="btn btn--ghost btn--sm" href="./" aria-current="page" data-keep-mobile>Studio</a>
-        <a class="btn btn--ghost btn--sm" href="templates.html">Templates</a>
+        <a class="btn btn--ghost btn--sm" href="./">Studio</a>
+        <a class="btn btn--ghost btn--sm" href="templates.html" aria-current="page" data-keep-mobile>Templates</a>
       </div>
 
       <button class="auth-toggle" id="authToggle" aria-label="Account" aria-expanded="false" aria-controls="authPanel" data-keep-mobile>
@@ -130,116 +122,76 @@
   <div class="auth-divider"></div>
 
   <main id="main">
-    <div class="studio">
+    <div class="container stack">
 
-      <section class="studio__stage" aria-labelledby="preview-title">
-        <div class="stage-head">
-          <h2 class="section__title" id="preview-title">Preview</h2>
+      <section class="section" aria-labelledby="library-title">
+        <div class="section__header">
+          <div class="section__titles">
+            <h2 class="section__title" id="library-title">Your templates</h2>
+            <p class="section__lead">
+              A draft is yours alone. A published template can be claimed, and every
+              version you publish is frozen the moment it is written.
+            </p>
+          </div>
           <div class="toolbar">
-            <div class="segmented" role="group" aria-label="What to design">
-              <button type="button" class="segmented__btn is-on" data-kind="badge" aria-pressed="true">Badge</button>
-              <button type="button" class="segmented__btn" data-kind="certificate" aria-pressed="false">Certificate</button>
-            </div>
-            <button type="button" class="btn btn--secondary btn--sm" id="presetBtn">Presets</button>
-            <button type="button" class="btn btn--ghost btn--sm" id="randomBtn" title="A different design from the catalogue pools">Randomize</button>
+            <label class="fld fld--inline">
+              <span class="fld__label">Show</span>
+              <select class="fld__input" id="statusFilter">
+                <option value="all">All</option>
+                <option value="draft">Drafts</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
+            <a class="btn btn--primary btn--sm" href="./">New design</a>
           </div>
         </div>
 
-        <div class="preview-stage" id="previewStage">
-          <div class="preview-frame" id="preview"></div>
+        <div id="signedOut" class="notice" hidden>
+          <p>Sign in to see the templates you have made.</p>
+          <button type="button" class="btn btn--primary btn--sm" id="signInBtn">Sign in</button>
         </div>
 
-        <p class="preview-note">
-          The strip along the foot is drawn by the renderer in every mode and cannot be
-          switched off. It carries the origin, your handle and the verify address into
-          the exported pixels.
-        </p>
-
-        <div class="warn-list" id="warnings" role="status" aria-live="polite"></div>
+        <div id="libraryList" class="stack stack--tight"></div>
       </section>
 
-      <section class="studio__panel" aria-labelledby="editor-title">
-        <h2 class="section__title" id="editor-title">Design</h2>
-
-        <div class="save-bar" id="saveBar">
-          <div class="save-bar__state" id="saveState" role="status" aria-live="polite">Not saved yet</div>
-          <div class="toolbar">
-            <button type="button" class="btn btn--secondary btn--sm" id="saveDraftBtn">Save draft</button>
-            <button type="button" class="btn btn--primary btn--sm" id="publishBtn">Publish</button>
-          </div>
-        </div>
-
-        <div class="notice notice--warn" id="handleNotice" hidden>
-          <p>
-            Publishing needs a handle: it is the issuing handle printed on every badge you
-            make. Pick one on
-            <a href="https://sash.neorgon.com/" target="_blank" rel="noopener">sash.neorgon.com</a>,
-            then come back.
+      <section class="section" id="adminSection" aria-labelledby="admin-title" hidden>
+        <div class="section__titles">
+          <h2 class="section__title" id="admin-title">Admin: open any template</h2>
+          <p class="section__lead">
+            An admin can read and edit any template by its public id, including a draft
+            and a private one. Everything you change is still recorded against your own
+            subject in the version history.
           </p>
         </div>
-
-        <div class="notice notice--error" id="blockNotice" hidden>
-          <h3 id="blockTitle">That name belongs to a real issuer</h3>
-          <p id="blockMessage"></p>
-          <p class="notice__aside">
-            The check reads the name, the description, the criteria and the words drawn on
-            the artefact: the arcs, the ribbon and every line of a certificate. Enamel makes
-            parody credentials, and a parody that names a real body as the issuer of a
-            credential is not a parody any more. Rename it and publish again.
-          </p>
+        <div class="toolbar">
+          <label class="fld fld--inline">
+            <span class="fld__label">Public id</span>
+            <input class="fld__input" id="adminId" maxlength="10" placeholder="ab12cd34ef" spellcheck="false" autocomplete="off">
+          </label>
+          <button type="button" class="btn btn--secondary btn--sm" id="adminOpen">Open</button>
         </div>
-
-        <div id="editorRoot" class="editor"></div>
+        <div id="adminResult" class="stack stack--tight"></div>
       </section>
 
     </div>
   </main>
 
-  <div class="modal" id="presetModal" hidden>
+  <div class="modal" id="versionsModal" hidden>
     <div class="modal__backdrop" data-modal-close tabindex="-1" aria-hidden="true"></div>
-    <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="presetModalTitle" tabindex="-1">
+    <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="versionsTitle" tabindex="-1">
       <header class="modal__header">
-        <h2 id="presetModalTitle">Start from a preset</h2>
+        <h2 id="versionsTitle">Versions</h2>
         <button type="button" class="btn btn--ghost btn--icon" data-modal-close aria-label="Close dialog">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </header>
-      <div class="modal__body">
-        <p class="section__lead">Every one of these is a finished design. Pick the nearest and change the words.</p>
-        <div class="preset-grid" id="presetGrid"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal" id="publishModal" hidden>
-    <div class="modal__backdrop" data-modal-close tabindex="-1" aria-hidden="true"></div>
-    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="publishModalTitle" tabindex="-1">
-      <header class="modal__header">
-        <h2 id="publishModalTitle">Publish this version</h2>
-        <button type="button" class="btn btn--ghost btn--icon" data-modal-close aria-label="Close dialog">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </header>
-      <div class="modal__body">
-        <p class="section__lead">
-          A published version is frozen. Every badge claimed from it keeps the design it
-          was issued with, whatever you change afterwards.
-        </p>
-        <label class="fld">
-          <span class="fld__label">What changed</span>
-          <textarea class="fld__input fld__area" id="changelogInput" rows="3" maxlength="600" placeholder="First cut"></textarea>
-        </label>
-        <p class="fld__hint" id="publishHint"></p>
-      </div>
-      <footer class="modal__footer">
-        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
-        <button type="button" class="btn btn--primary" id="publishConfirm">Publish</button>
-      </footer>
+      <div class="modal__body" id="versionsBody"></div>
     </div>
   </div>
 
   <footer class="neo-footer" data-footer-mode="app">
-    Designs are drawn in your browser. Templates and versions are stored on Sash.
+    Templates and versions are stored on Sash. One deployment serves both sites.
   </footer>
 
   <script type="module" src="js/app.js"></script>
