@@ -11,7 +11,7 @@ Design a badge or a certificate from a preset, save versions, publish it, and ha
 [![Claude Code][badge-claude]][url-claude]
 [![License][badge-license]](LICENSE)
 
-[badge-site]:    https://img.shields.io/badge/live_site-f97316?style=for-the-badge&logo=googlechrome&logoColor=white
+[badge-site]:    https://img.shields.io/badge/live_site-0063e5?style=for-the-badge&logo=googlechrome&logoColor=white
 [badge-html]:    https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white
 [badge-css]:     https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white
 [badge-js]:      https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black
@@ -48,21 +48,25 @@ it off, which is the point.
 
 ## Features
 
-- **A parametric editor, not a canvas**: fifteen silhouettes, nine patterns, ring
-  styles, metals, pips, arc text, a ribbon and a centre glyph or image, each one a
-  field in a design document rather than a shape you drag.
-- **24 finished presets and a randomize control**: twelve badges, twelve
+- **A parametric editor, not a canvas** -- fifteen silhouettes, eight patterns,
+  ring styles, metals, pips, arc text, a ribbon and a centre glyph or image, each
+  one a field in a design document rather than a shape you drag.
+- **24 finished presets and a randomize control** -- twelve badges, twelve
   certificates and ten font pairings. A pairing names a role, never a family.
-- **Versions that are frozen once written**: publishing writes a version and every
-  award pins the version it was issued from, so a later edit never changes a badge
-  somebody already holds.
-- **Claim links with an expiry, a seat limit and an allow list**, minted by the
-  deployment, and an issuer dashboard that answers who claimed which link.
-- **Two authoring warnings that are measured rather than guessed**: arc text
+- **Versions that are frozen once written** -- publishing writes a version and
+  every award pins the version it was issued from, so a later edit never changes
+  a badge somebody already holds.
+- **Claim links with an expiry, a seat limit and an allow list** -- minted by
+  the deployment, and an issuer dashboard that answers who claimed which link.
+- **Two authoring warnings that are measured rather than guessed** -- arc text
   leaving the silhouette (it vanishes on export against a light page) and a
   provenance strip too pale to read.
-- **Certificates at a fixed A4 aspect** in both orientations, with an embedded
+- **Certificates at a fixed A4 aspect** -- both orientations, with an embedded
   badge as the seal and a QR of the verify address.
+- **A public catalogue** -- every published Neorgon and community template,
+  readable with no account, each one a link into the studio.
+- **PNG and SVG downloads of the draft** -- through the exporter Sash uses,
+  fonts inlined and the provenance strip drawn, so the file says it is a preview.
 
 ---
 
@@ -71,23 +75,25 @@ it off, which is the point.
 ES modules require an HTTP server (not `file://`):
 
 ```bash
-make serve
+make serve            # http://localhost:8885
 ```
 
-Or manually:
+There is nothing else to start. Every page names the Convex deployment in a
+`<meta name="neo-convex-url">`, and that deployment belongs to
+`projects/sash-site/convex/`, so a read of a published template works from the
+first load.
 
-```bash
-python3 -m http.server 8000
-```
-
-**Signing in does not work on localhost.** The site carries the fleet's
-production Clerk key, and Clerk refuses a production key on any origin that is
-not `neorgon.com`. The editor, the presets, the warnings and every read of a
-published template work; anything that writes needs the deployed site.
+**Sign-in is the Neorgon Auth Kit, and it does not work on localhost.** The
+site carries the fleet's production Clerk key, and Clerk refuses a production
+key on any origin that is not `neorgon.com`. The kit settles signed out, so the
+editor, the presets, the warnings, the downloads, the public catalogue and every
+read of a published template work; anything that writes needs the deployed site.
 
 ---
 
 ## Architecture
+
+![Architecture](docs/architecture.svg)
 
 There is **no `convex/` folder here.** Enamel points a `ConvexHttpClient` at the
 deployment `projects/sash-site/convex/` owns and calls the same functions. The
@@ -96,11 +102,14 @@ quietly disagree about it.
 
 ```
 enamel-site/
-├── index.html          # The studio: editor, preview, presets, publish
-├── templates.html      # The library: versions, archive, admin edit
+├── index.html          # The studio: editor, preview, presets, downloads, publish
+├── templates.html      # The library, the public catalogue, admin open by id
 ├── links.html          # Claim links and the issuer dashboard
+├── 404.html
 ├── css/
-│   └── style.css       # Site styles. Tokens come from the CDN base.css
+│   ├── style.css       # Site styles. Tokens come from the CDN base.css
+│   ├── frame.css       # Takes a framed page out of view
+│   └── neorgon-*.css   # Header, footer, beacon, auth and insignia kits, vendored
 ├── js/
 │   ├── app.js          # Entry point, one controller per page
 │   ├── state.js        # The working design, one per kind, and the session
@@ -108,22 +117,30 @@ enamel-site/
 │   ├── editor.js       # Those fields as controls, and one delegated listener
 │   ├── preview.js      # The kit draws; this appends what it returns
 │   ├── warnings.js     # The arc and contrast measurements
+│   ├── exporting.js    # The PNG and SVG download controls
 │   ├── studio.js       # index.html
 │   ├── library.js      # templates.html
+│   ├── catalogue.js    # The public catalogue on templates.html
 │   ├── links.js        # links.html
 │   ├── art.js          # Shrink, upload, attach
 │   ├── api.js          # The one place this site talks to Convex
-│   ├── auth.js         # Clerk session
+│   ├── auth.js         # Listens to the Auth Kit for the session
+│   ├── frame.js        # The notice a framed page shows instead
 │   ├── render.js       # Shared DOM pieces
 │   ├── events.js       # The modal shell
 │   ├── utils.js        # Shared helpers
+│   ├── convex.js       # Client and function map, shared with Sash
 │   ├── insignia/       # The Insignia Kit, vendored. Never edited here
-│   └── vendor/         # The shared auth client, vendored. Never edited here
-├── favicon.ico
+│   └── neorgon-*.js    # Header, footer, beacon, DOM and Auth kits, vendored
+├── docs/
+│   ├── architecture.svg
+│   └── shape-catalogue-rules.md
+├── favicon.ico         # Generated from the hub card, with the rest of the set
 ├── robots.txt
 ├── sitemap.xml
 ├── CNAME
 ├── Makefile
+├── PRODUCT.md
 └── README.md
 ```
 

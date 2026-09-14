@@ -1,0 +1,103 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#0f172a"
+    primaryTextColor: "#e2e8f0"
+    primaryBorderColor: "#f97316"
+    lineColor: "#fb923c"
+    secondaryColor: "#1e293b"
+    tertiaryColor: "#1e293b"
+    clusterBkg: "#fff7ed"
+    clusterBorder: "#fed7aa"
+    edgeLabelBackground: "#ffedd5"
+    mainBkg: "#0f172a"
+    nodeBorder: "#f97316"
+    titleColor: "#7c2d12"
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif"
+    fontSize: "13px"
+---
+flowchart TB
+    Issuer([Issuer]) --> Pages
+
+    subgraph Pages["Pages: each carries meta neo-convex-url and the Clerk key"]
+        index["index.html\nThe studio: editor, preview,\npresets, save, publish (?t=publicId)"]
+        templates["templates.html\nThe library, versions, archive,\nadmin open, public catalogue"]
+        links["links.html\nClaim links and who claimed\n(?t=publicId)"]
+        notfound["404.html\nFrame guard and notice only"]
+    end
+
+    subgraph Chrome["Vendored page chrome (classic scripts, defer)"]
+        header["neorgon-header.js\nHeader Kit: app mode,\nember skin, themes"]
+        footer["neorgon-footer.js\nFooter Kit: app mode"]
+        beacon["neorgon-beacon.js\nBeacon Kit: report a correction"]
+    end
+    Pages -.->|"on every page"| Chrome
+
+    app["app.js\nEntry point: one controller per page,\nimported on demand from body[data-page]"]
+    Pages --> app
+
+    subgraph Shared["Site modules shared by every page (ES modules, no build step)"]
+        frame["frame.js\nFramed: a notice instead of the page,\nno sign-in, no write control"]
+        events["events.js\nModal shell and focus trap"]
+        auth["auth.js\nListens to the Auth Kit, reads\nthe handle and the admin flag"]
+        state["state.js\nOne design per kind, meta,\ntemplate id, session"]
+        render["render.js\nThumbs, rows, pills,\nempty states"]
+        utils["utils.js\n$, design paths, dates\nvia the kit's formatDate"]
+    end
+    subgraph Controllers["Site modules: one controller per page"]
+        studio["studio.js\nindex.html: save, publish,\nart, presets, kind"]
+        library["library.js\ntemplates.html: mine,\nversions, archive, admin"]
+        linksjs["links.js\nlinks.html: mint, withdraw,\nclaimants, template switch"]
+        library --> catalogue["catalogue.js\ntemplates:listPublic + get,\nreadable signed out"]
+    end
+    subgraph StudioMods["Site modules: the studio's own"]
+        editor["editor.js\nFields as controls,\none delegated listener"] --> fields["fields.js\nThe editor declared as paths\ninto the design document"]
+        preview["preview.js\nHands design + provenance\nto the kit, appends the SVG"] --> warnings["warnings.js\nArc outside the silhouette,\nstrip contrast, graded"]
+        exporting["exporting.js\nPNG / SVG of the draft,\nstrip reads preview"]
+        art["art.js\nShrink to a 512px PNG,\nart:getUploadUrl, POST, art:attach"]
+    end
+    api["api.js\nq() and m(): an auth failure throws\nor returns { ok:false, code, message }"]
+    app --> Shared
+    app --> Controllers
+    studio --> StudioMods
+    Controllers --> api
+    auth --> api
+    notfound --> frame
+
+    state <-->|"enamel-studio-v1"| LS[("localStorage\nThe working draft; the\ntemplate row is the record")]
+
+    subgraph Kits["Vendored module kits from packages/neorgon-ui, imported, never edited here"]
+        authkit["neorgon-auth.js (Auth Kit)\nHeader slot, sign-in dialog, Convex token,\nneorgon-auth-sites.js catalogue"]
+        insignia["js/insignia/ (Insignia Kit)\nschema, render, certificate, patterns,\nshapes, glyphs, export, wallet,\nopenbadges, data/presets"]
+        dom["neorgon-dom.js (DOM Kit)\nescHtml, showToast,\ndebounce, copyText"]
+    end
+    auth -->|"start({ convex }), onChange"| authkit
+    Controllers -->|"requireSignIn before every write"| authkit
+    StudioMods -->|"renderSvg, exportPng, exportSvgFile,\nschema, presets, shapes"| insignia
+    render -->|"renderSvg for thumbnails"| insignia
+    Shared -->|"escHtml, showToast\n(editor.js and links.js too)"| dom
+
+    convexjs["js/convex.js\nConvexHttpClient from esm.sh,\nURL from meta[neo-convex-url],\nthe function map (C8.4), vendored twice"]
+    api --> convexjs
+    authkit -->|"setAuth(token)"| convexjs
+
+    Clerk["clerk.neorgon.com\nThe fleet's production Clerk instance,\none session across *.neorgon.com\n(refuses 127.0.0.1)"]
+    authkit <-->|"pk_live on every page, session, JWT"| Clerk
+
+    subgraph Deployment["The one Convex production deployment, youthful-oyster-436.convex.cloud, source projects/sash-site/convex/ (Enamel has no convex/ by design, C8.1)"]
+        templatesTs["templates.ts\nmine, get, listPublic, create,\nupdateMeta, publish (blocklist), archive"]
+        versionsTs["versions.ts\nlist, saveDraft\n(a version is frozen once written)"]
+        claimsTs["claims.ts\ncreate, mine, revoke, claimants\n(URL built from SASH_PUBLIC_ORIGIN)"]
+        artTs["art.ts\ngetUploadUrl, attach"]
+        profilesTs["profiles.ts / auth.ts\nme, isAdmin"]
+        templatesTs & versionsTs & claimsTs & artTs & profilesTs --> DB[("Database\ntemplates · templateVersions\nclaims · awards · profiles\nkudos · rateEvents · file storage")]
+    end
+    convexjs -->|"POST /api/query, /api/mutation"| Deployment
+    Clerk -.->|"issues the JWT the deployment verifies\n(auth.config.ts, ctx.auth.getUserIdentity)"| Deployment
+    art -.->|"POST the PNG to the upload URL"| DB
+
+    Sash["sash.neorgon.com (the wallet)\nclaim.html?t=token, u.html?h=handle,\nbadge.html?id=publicId, the verify\nURL in every provenance strip"]
+    linksjs -->|"copies the minted link\nsash.neorgon.com/claim.html?t=token\n(built by claims:create); claimants\nlink to u.html?h=handle"| Sash
+    Claimant([Claimant]) -->|"follows the claim link"| Sash
+    Sash -->|"claims:redeem writes the award\nagainst the same deployment"| claimsTs

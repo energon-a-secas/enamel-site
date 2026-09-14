@@ -44,6 +44,18 @@ export const VALIDITY_CHOICES = [
 
 const roles = () => FONT_ROLES.map((r) => [r, ROLE_LABELS[r]]);
 
+// The deployment's caps on the two list fields (convex/templates.ts checkMeta:
+// 20 skills of 40 characters, 200 handles; convex/lib/handles.ts HANDLE_RE:
+// 30 characters). A list is typed as one comma-separated line, so its
+// `maxlength` is the items plus the ", " between them. The server still
+// refuses what gets past this, and its message names the cap; this only stops
+// the form accepting ten thousand characters it already knows will be refused.
+const SKILLS_MAX = 20;
+const SKILL_CHARS = 40;
+const ALLOW_MAX = 200;
+const HANDLE_CHARS = 30;
+const listCap = (items, chars) => items * chars + (items - 1) * 2;
+
 const f = (path, label, type, extra = {}) => ({ path, label, type, ...extra });
 
 /** A nullable sub-object: the checkbox writes the whole thing or a null. */
@@ -174,7 +186,7 @@ function certificateGroups(d) {
           hint: 'The square in the preview is drawn at the size it will take. It encodes a placeholder here and the real verify address once the award exists.' }),
         {
           path: 'serial.show', label: '', type: 'note',
-          body: 'The serial and the verify line can be hidden in this preview and are drawn anyway on anything issued. That is C11.2, and it is one line in the renderer rather than a rule anybody has to remember.',
+          body: 'The serial and the verify line can be hidden in this preview. They are drawn anyway on anything issued.',
         },
       ],
     },
@@ -188,19 +200,25 @@ export function metaGroup(meta) {
       f('meta.name', 'Name', 'text', { maxlength: 80, hint: 'Screened against a list of real issuers when you publish.' }),
       f('meta.description', 'Description', 'textarea', { maxlength: 600 }),
       f('meta.criteria', 'How it is earned', 'textarea', { maxlength: 1200 }),
-      f('meta.skills', 'Skills', 'list', { hint: 'Comma separated, up to 20.' }),
+      f('meta.skills', 'Skills', 'list', {
+        maxlength: listCap(SKILLS_MAX, SKILL_CHARS),
+        hint: `Comma separated, up to ${SKILLS_MAX}, each ${SKILL_CHARS} characters or fewer.`,
+      }),
       f('meta.category', 'Category', 'select', { options: CATEGORIES.map((c) => [c, CATEGORY_LABELS[c]]), rerender: true }),
       ...(meta.category === 'recognition' ? [f('meta.sphere', 'Sphere', 'select', { options: SPHERES })] : []),
       f('meta.access', 'Access', 'select', { options: ACCESS_LEVELS.map((a) => [a, ACCESS_LABELS[a]]), rerender: true }),
       ...(meta.access === 'limited' ? [f('meta.seats', 'Seats', 'number', { min: 1, step: 1 })] : []),
       ...(meta.access === 'private' ? [{
         path: 'meta.access', label: '', type: 'note',
-        body: 'Uploaded art on a private template is not private. A Convex serving URL is a bearer credential, and the only way to withdraw one is to delete the file.',
+        body: 'An uploaded image is not private, even on a private template: anyone with its address can open it. Removing the image is the only way to withdraw it.',
       }] : []),
       ...(meta.category === 'recognition' || meta.category === 'meme'
         ? [f('meta.stackable', 'Can be earned more than once', 'check')] : []),
       f('meta.defaultValidityMs', 'Awards expire', 'select', { options: VALIDITY_CHOICES, cast: 'msOrNull' }),
-      f('meta.allowList', 'Only these handles', 'list', { hint: 'Comma separated. Leave empty to let anyone claim.' }),
+      f('meta.allowList', 'Only these handles', 'list', {
+        maxlength: listCap(ALLOW_MAX, HANDLE_CHARS),
+        hint: `Comma separated, up to ${ALLOW_MAX} handles. Leave empty to let anyone claim.`,
+      }),
     ],
   };
 }

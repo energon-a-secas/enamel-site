@@ -19,51 +19,57 @@ Then open http://localhost:8885. It must be served over HTTP, because the app is
 
 | Module | Lines | Owns |
 |---|---:|---|
+| `js/insignia/schema.js` | 500 | `SCHEMA_VERSION`, `KINDS`, `ORIGINS`, `CATEGORIES`, `SPHERES` |
 | `js/insignia/render.js` | 499 | `setArtUrls`, `artUrl`, `nextId`, `familyFor`, `renderSvg` |
-| `js/insignia/schema.js` | 497 | `SCHEMA_VERSION`, `KINDS`, `ORIGINS`, `CATEGORIES`, `SPHERES` |
-| `js/insignia/certificate.js` | 494 | `formatDate`, `layoutText`, `certificateRuns`, `drawCertificate`, `qrMatrix` |
+| `js/insignia/certificate.js` | 498 | `formatDate`, `layoutText`, `certificateRuns`, `drawCertificate`, `qrMatrix` |
+| `js/insignia/export.js` | 453 | `FAMILY_SUBSETS`, `familyCovers`, `partitionChars`, `fieldLabel`, `fallbackRuns` |
+| `js/editor.js` | 431 | `renderEditor`, `applyPairing`, `initEditor` |
 | `js/neorgon-footer.js` | 420 | none |
-| `js/editor.js` | 369 | `renderEditor`, `applyPairing`, `initEditor` |
-| `js/insignia/wallet.js` | 365 | `isImported`, `provenanceOf`, `renderAwardCard`, `renderAwardGrid`, `buildProfileSvg` |
-| `js/studio.js` | 338 | `start`, `onSession` |
-| `js/insignia/export.js` | 323 | `subsetChars`, `pickFace`, `inlineGoogleFont`, `inlineImages`, `buildExportSvg` |
+| `js/studio.js` | 412 | `start`, `onSession` |
+| `js/insignia/wallet.js` | 369 | `isImported`, `provenanceOf`, `renderAwardCard`, `renderAwardGrid`, `buildProfileSvg` |
 | `js/insignia/openbadges.js` | 306 | `OB3_KEYWORD`, `OB2_KEYWORD`, `OB3_NS`, `OB2_NS`, `crc32` |
+| `js/warnings.js` | 301 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside` |
+| `js/insignia/patterns.js` | 271 | `SVG_NS`, `svgEl`, `n`, `CONTROL_RE`, `hasControl` |
 | `js/neorgon-beacon.js` | 262 | none |
 | `js/insignia/data/certificates.js` | 260 | `CERTIFICATE_PRESETS` |
 | `js/insignia/data/badges.js` | 258 | `badge`, `BADGE_PRESETS` |
-| `js/insignia/patterns.js` | 254 | `SVG_NS`, `svgEl`, `n`, `metalGradient`, `patternDefs` |
-| `js/warnings.js` | 244 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside` |
-| `js/vendor/neorgon-auth.js` | 236 | `initNeorgonClerkConvex`, `neorgonSignOut`, `neorgonDisplayLabel` |
-| `js/links.js` | 223 | `start`, `onSession` |
-| `js/fields.js` | 221 | `ROLE_LABELS`, `CATEGORY_LABELS`, `ACCESS_LABELS`, `VALIDITY_CHOICES`, `metaGroup` |
-| `js/utils.js` | 181 | `$`, `fmtDate`, `stamp`, `humanMs`, `clone`, `getPath`, `setPath` |
-| `js/state.js` | 161 | `blankMeta`, `state`, `design`, `setDesign`, `loadSaved` |
-| `js/neorgon-dom.js` | 156 | `escHtml`, `debounce`, `throttle`, `showToast`, `copyText`, `downloadBlob` |
-| `js/auth.js` | 144 | `openSignIn`, `initAuth` |
+| `js/fields.js` | 239 | `ROLE_LABELS`, `CATEGORY_LABELS`, `ACCESS_LABELS`, `VALIDITY_CHOICES`, `metaGroup` |
+| `js/links.js` | 238 | `start`, `onSession` |
+| `js/utils.js` | 181 | `$`, `showToast`, `clone`, `getPath`, `setPath` |
+| `js/state.js` | 167 | `blankMeta`, `state`, `design`, `setDesign`, `loadSaved` |
+| `js/neorgon-dom.js` | 156 | `escHtml`, `debounce`, `throttle`, `clamp`, `uid` |
+| `js/render.js` | 139 | `STATUS_LABEL`, `KIND_LABEL`, `thumb`, `presetGrid`, `emptyState` |
 | `js/insignia/shapes.js` | 138 | `SHAPE_VIEWBOX`, `SHAPE_FIELD`, `SHAPES`, `SHAPE_LIST`, `shapePath` |
+| `js/preview.js` | 133 | `previewProvenance`, `draftProvenance`, `paintPreview`, `startFonts` |
 | `js/art.js` | 126 | `MAX_ART_BYTES`, `pickImage`, `shrink`, `uploadArt`, `attachNewArt` |
 | `js/insignia/data/presets.js` | 125 | `PRESETS`, `DEFAULT_PRESET`, `presetsFor`, `preset`, `presetDesign` |
+| `js/library.js` | 122 | `start`, `onSession` |
 | `js/insignia/data/fonts.js` | 120 | `PAIRING_SLOTS`, `PAIRINGS`, `PAIRING_LIST`, `pairing`, `badgeFonts` |
-| `js/render.js` | 115 | `STATUS_LABEL`, `KIND_LABEL`, `thumb`, `presetGrid`, `emptyState` |
-| `js/library.js` | 113 | `start`, `onSession` |
 | `js/insignia/glyphs.js` | 111 | `GLYPH_FIELD`, `GLYPHS`, `GLYPH_LIST`, `glyphNode` |
-| `js/preview.js` | 103 | `previewProvenance`, `paintPreview`, `startFonts` |
+| `js/catalogue.js` | 102 | `startCatalogue` |
+| `js/frame.js` | 99 | `framed` |
 | `js/events.js` | 95 | `openModal`, `closeModal`, `bindEvents` |
-| `js/frame.js` | 92 | `framed` |
-| `js/api.js` | 83 | `isAuthError`, `q`, `m`, `failText` |
+| `js/api.js` | 84 | `isAuthError`, `q`, `m`, `failText` |
+| `js/auth.js` | 81 | `initAuth` |
+| `js/exporting.js` | 55 | `previewStem`, `bindExport` |
 | `js/app.js` | 43 | none |
 | `js/convex.js` | 29 | `convex`, `api` |
 
-`js/neorgon-header.js` (825) is omitted above for the same reason the rest of
-the kit files carry no detail: none of it is this project's to change.
+`js/neorgon-header.js` (825) and `js/neorgon-auth.js` (1000) are omitted above
+for the same reason the rest of the kit files carry no detail: none of it is this
+project's to change. `js/neorgon-auth-sites.js` (7) is the generated site
+catalogue the Auth Kit reads.
 
 **The Lines column is a snapshot and goes stale.** Recount rather than trust it:
-`wc -l js/*.js js/insignia/*.js`. Every number in it was one or two out and
-`js/insignia/wallet.js` was sixty out before C15 A53's pass corrected them.
+`wc -l js/*.js js/insignia/*.js js/insignia/data/*.js`. Every number in it was
+one or two out and `js/insignia/wallet.js` was sixty out before C15 A53's pass
+corrected them.
 
 Vendored from `packages/neorgon-ui/`, never edited in place, regenerated by the
 matching `sync-*.sh`: `js/neorgon-header.js`, `js/neorgon-footer.js`,
-`js/neorgon-beacon.js`, `js/neorgon-dom.js`, and all of `js/insignia/`.
+`js/neorgon-beacon.js`, `js/neorgon-dom.js`, `js/neorgon-auth.js` with its
+generated `js/neorgon-auth-sites.js`, the `css/neorgon-*.css` beside them, and
+all of `js/insignia/`.
 
 ## The backend is somebody else's folder
 
@@ -80,7 +86,8 @@ Enamel writes `templates` and `templateVersions` and nothing else.
 
 The deployment URL is a `<meta name="neo-convex-url">` on every page rather than
 a constant in a JS file, so checking that the two sites agree is a `grep` and
-swapping dev for production is one change per page. `js/convex.js` reads it and
+swapping dev for production is one change per page. The production deployment is
+`youthful-oyster-436`, and all four pages name it. `js/convex.js` reads it and
 **throws on load** if it is absent or malformed, which is deliberate: a page with
 no deployment is not a page that should half work.
 
@@ -94,7 +101,14 @@ no deployment is not a page that should half work.
 
 - Zero build step. Plain ES modules loaded by `js/app.js`.
 - Header and footer come from the shared kits. Do not add site-local `.neo-footer` or `.header-bar` CSS.
-- No single JS file over ~500 lines, and `js/app.js` under 50. It currently holds.
+- No single JS file over ~500 lines, and `js/app.js` under 50. It currently holds
+  for every file this site owns; the vendored kits are not this site's count.
+- Sign-in is the Neorgon Auth Kit: `js/neorgon-auth.js`, `js/neorgon-auth-sites.js`
+  and `css/neorgon-auth.css`, synced by `packages/neorgon-ui/sync-auth.sh`. It
+  owns the header slot, the sign-in dialog and the Convex token. `js/auth.js`
+  only listens, and the pages call `NeoAuth.requireSignIn` in front of a write.
+  The site-local sign-in sheet, its `.auth-*` CSS and `js/vendor/` are gone; do
+  not bring any of them back, and never style `.neo-auth` here.
 - No inline `onclick` anywhere, and nothing exposed on `window` for one. The
   editor wires one delegated listener per root and reads `data-path`.
 - The only local identity knob is `--accent` (`#f97316`) and the `--accent-bright`
@@ -105,16 +119,19 @@ no deployment is not a page that should half work.
 **A production Clerk key does not work on localhost.** The key on every page is
 the fleet's production instance, and Clerk refuses it on any origin that is not
 `neorgon.com`: the console says "Production Keys are only allowed for domain
-neorgon.com" and no session is possible. So `make serve` gives you the editor,
-the presets, the warnings and every published-template read, and nothing that
-needs an identity. That is not a bug in this site and there is no local
-workaround short of a development Clerk instance.
+neorgon.com" and no session is possible. The Auth Kit settles as `unavailable`,
+keeps its header slot hidden, answers `requireSignIn` with false, and `js/auth.js`
+still hands the page a signed-out session, so every page renders its signed-out
+state rather than an error. So `make serve` gives you the editor, the presets,
+the warnings, the downloads, the public catalogue and every published-template
+read, and nothing that needs an identity. That is not a bug in this site and
+there is no local workaround short of a development Clerk instance.
 
-**`js/convex.js`, `js/insignia/*`, `js/vendor/*` and `js/neorgon-*.js` are not
-this project's to edit.** The first is written by the backend and vendored
-identically into `sash-site`; the rest come from `packages/neorgon-ui/` and are
-overwritten by their sync scripts. If one of them is missing something, fix the
-canonical source and re-run the sync.
+**`js/convex.js`, `js/insignia/*`, `js/neorgon-*.js` and `css/neorgon-*.css`
+are not this project's to edit.** The first is written by the backend and
+vendored identically into `sash-site`; the rest come from `packages/neorgon-ui/`
+and are overwritten by their sync scripts. If one of them is missing something,
+fix the canonical source and re-run the sync.
 
 **Do not write `escHtml` here. It exists.** `js/neorgon-dom.js` is the Neorgon
 DOM Kit, vendored by `packages/neorgon-ui/sync-dom.sh`, and it owns `escHtml`,

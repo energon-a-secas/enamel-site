@@ -19,6 +19,11 @@
   --accent: #f97316;
   /* base.css pairs every --accent with a brighter hover; the pair has to move together */
   --accent-bright: #fb923c;
+  --neo-auth-accent: #c2410c; /* Orange-700: the Auth Kit paints white on this, 5.18:1; on the site accent it would be 2.80:1 */
+  /* Text on an accent-filled control. White on this orange measures 2.8:1
+     and fails AA; the fleet ground measures 7.2:1 on --accent and 8.9:1 on
+     --accent-bright (WCAG relative luminance, measured 2026-09-14). */
+  --accent-ink: #040714;
 
   /* Site extras base.css does not define */
   --surface-toast: #1a1730;
@@ -221,8 +226,8 @@ main#main {
  * Owned by the Neorgon Header Kit (css/neorgon-header.css, canonical
  * source: packages/neorgon-ui/header/). Do NOT style .header-bar,
  * .header-logo*, .header-title-link, .header-subtitle, .header-right,
- * .header-actions, or .header-home here. Auth styles (.auth-*) stay
- * site-owned below.
+ * .header-actions, or .header-home here. Sign-in is the Neorgon Auth Kit
+ * (css/neorgon-auth.css): never style .neo-auth or .auth-* here either.
  */
 nav {
   display: flex;
@@ -231,7 +236,7 @@ nav {
 }
 
 /* ── Buttons (canonical) ─────────────────────────────────────
- * Use .btn + a variant. Aliases: .nav-link = toolbar ghost; .auth-* map below.
+ * Use .btn + a variant. Alias: .nav-link = toolbar ghost.
  */
 .btn {
   display: inline-flex;
@@ -276,7 +281,7 @@ nav {
 }
 .btn--primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   border-color: transparent;
 }
 .btn--primary:hover { background: var(--accent-bright); }
@@ -324,136 +329,6 @@ nav {
 .nav-link:hover {
   background: rgba(255,255,255,0.1);
   color: #fff;
-}
-
-.auth-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--control-height);
-  min-height: var(--control-height);
-  padding: 0;
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: rgba(255,255,255,0.92);
-  cursor: pointer;
-  font-family: inherit;
-  transition: background-color var(--dur), color var(--dur), border-color var(--dur);
-}
-.auth-toggle:hover {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-}
-.auth-toggle svg {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  display: block;
-}
-.auth-toggle.logged-in { color: var(--accent); }
-.auth-toggle.logged-in svg circle:nth-of-type(2) {
-  fill: currentColor;
-  stroke: none;
-}
-
-/* ── Sheet (inline panel under header), not a modal ──────────
- * Use for auth, filters, compact forms. No backdrop; page scrolls.
- * For blocking overlays use .modal below.
- */
-.auth-panel {
-  background: rgba(255,255,255,0.02);
-  border-bottom: 1px solid var(--border-subtle);
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
-}
-.auth-panel.open { max-height: 300px; }
-.auth-panel-inner {
-  padding: var(--space-6);
-  max-width: 400px;
-  margin: 0 auto;
-}
-.auth-tabs {
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-.auth-tab {
-  flex: 1;
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  transition: background-color var(--dur), color var(--dur), border-color var(--dur);
-}
-.auth-tab.active {
-  background: var(--surface-2);
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-}
-.auth-form input {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  font-family: inherit;
-}
-.auth-submit {
-  width: 100%;
-  min-height: var(--control-height);
-  padding: 0 var(--space-4);
-  border: none;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: #fff;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: background-color var(--dur);
-}
-.auth-submit:hover { background: var(--accent-bright); }
-#authUser {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-.auth-username {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-.auth-logout {
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  transition: background-color var(--dur), color var(--dur), border-color var(--dur);
-}
-.auth-logout:hover {
-  background: var(--surface-2);
-  color: var(--text-primary);
-}
-.auth-divider {
-  height: 1px;
-  background: var(--border-subtle);
 }
 
 /* ── Modal (blocking overlay) ──────────────────────────────── */
@@ -585,11 +460,7 @@ nav {
 /* ── Button press feedback ─────────────────────────────────── */
 button:active,
 .btn:active,
-.nav-link:active,
-.auth-toggle:active,
-.auth-tab:active,
-.auth-submit:active,
-.auth-logout:active {
+.nav-link:active {
   transform: scale(0.98);
   transition-duration: var(--dur-fast);
 }
@@ -635,7 +506,26 @@ button:active,
 /* ── Footer ────────────────────────────────────────────────────
    Owned by the Neorgon Footer Kit (css/neorgon-footer.css).
    Don't add .neo-footer rules here. Edit packages/neorgon-ui/footer/
-   and re-run sync-footer.sh. */
+   and re-run sync-footer.sh.
+
+   The one sanctioned form is a token override (footer README, "Per-site
+   override"). The kit's app mode pads its shell with --space-6 and reserves
+   no inline room for the two fixed 40px controls the fleet pins at the
+   bottom corners, the beacon at left:20px and back-to-top at right:20px, so
+   on this site the note started under the beacon and the meta bar ended
+   under the arrow. Until the kit reads an inline token of its own, the
+   token the shell reads is widened on the footer alone: offset 20 + control
+   40 + 12 of air. Below 701px the kit switches to --space-4 and the bar
+   wraps under the note, where nothing overlaps. */
+@media (min-width: 701px) {
+  .neo-footer[data-footer-mode="app"] { --space-6: 72px; }
+}
+/* Below 701px the kit reads --space-4 for the same inline padding, and the two
+   fixed controls still sit at the corners, so the same 72px applies there;
+   --space-4 is read once in footer.css, for this padding only. */
+@media (max-width: 700px) {
+  .neo-footer[data-footer-mode="app"] { --space-4: 72px; }
+}
 
 /* ── Focus styles ──────────────────────────────────────────── */
 :focus-visible {
@@ -687,10 +577,6 @@ button:active,
    file, and nothing below touches the header or footer kit.
    ══════════════════════════════════════════════════════════════ */
 
-.neorgon-clerk-mount { min-height: 1px; }
-/* Clerk's own form is taller than the template's 300px sheet. */
-.auth-panel.open { max-height: 82vh; overflow: auto; }
-
 /* ── Studio layout ─────────────────────────────────────────── */
 
 .studio {
@@ -728,6 +614,13 @@ button:active,
 
 .preview-frame { width: 100%; display: grid; place-items: center; }
 .preview-svg { width: 100%; max-width: 520px; height: auto; display: block; }
+
+.preview-parody {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: var(--space-3) 0 0;
+  max-width: 62ch;
+}
 
 .preview-note {
   color: var(--text-muted);
@@ -784,6 +677,23 @@ button:active,
 
 .save-bar__state { font-size: var(--text-sm); color: var(--text-secondary); }
 
+/* Signed out: one sentence and the control that opens the Auth Kit's dialog,
+   on its own line under the two disabled buttons. The explicit [hidden] rule
+   is needed because display:flex would otherwise beat the UA's hidden. */
+.save-bar__signin {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.save-bar__signin[hidden] { display: none; }
+
 .notice {
   padding: var(--space-4);
   border: 1px solid var(--border);
@@ -800,6 +710,7 @@ button:active,
 .notice--warn { border-left-color: var(--accent); }
 .notice--error { border-left-color: var(--danger); }
 .notice__aside { color: var(--text-muted) !important; }
+.notice a { color: inherit; text-decoration: underline; text-underline-offset: 2px; } /* the browser default blue measured 2.04:1 on the notice ground */
 
 /* ── The editor form ───────────────────────────────────────── */
 
@@ -864,7 +775,9 @@ details.editor__group:not([open]) > .editor__body { display: none; }
   font-size: var(--text-sm);
 }
 
-.fld__input:focus-visible { border-color: var(--accent); outline: none; }
+/* The page rule's 2px ring, kept: a 1px border colour change on its own is
+   not the focus area WCAG 2.4.13 asks for. */
+.fld__input:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent-bright); outline-offset: 1px; }
 .fld__input--mini { min-width: 0; }
 textarea.fld__input, .fld__area { padding: var(--space-2) var(--space-3); resize: vertical; line-height: 1.5; }
 
@@ -936,7 +849,7 @@ textarea.fld__input, .fld__area { padding: var(--space-2) var(--space-3); resize
   cursor: pointer;
 }
 
-.segmented__btn.is-on { background: var(--accent); color: #fff; }
+.segmented__btn.is-on { background: var(--accent); color: var(--accent-ink); }
 
 /* ── Presets ───────────────────────────────────────────────── */
 
@@ -1025,3 +938,17 @@ textarea.fld__input, .fld__area { padding: var(--space-2) var(--space-3); resize
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
+
+/* ── Public catalogue (templates.html) ─────────────────────── */
+
+.catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.catalogue__card { display: flex; flex-direction: column; gap: var(--space-3); }
+.catalogue__thumb { display: grid; place-items: center; min-height: 150px; }
+.catalogue__thumb .thumb { max-width: 100%; }
+.catalogue__body { display: flex; flex-direction: column; gap: var(--space-2); flex: 1; }
+.catalogue__body .toolbar { margin-top: auto; }

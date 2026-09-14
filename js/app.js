@@ -3,9 +3,9 @@
 // its controller is loaded on demand so the studio's editor is not parsed by
 // the two pages that do not have one.
 //
-// Order matters: the page renders its own state first, then Clerk loads, then
-// the page is told about the session. A page that waited for Clerk before
-// drawing would be blank for as long as the network took.
+// Order matters: the page renders its own state first, then the Auth Kit
+// settles the session, then the page is told about it. A page that waited for
+// the session before drawing would be blank for as long as the network took.
 
 import { framed } from './frame.js';
 import { bindEvents } from './events.js';
@@ -30,7 +30,7 @@ function onPageFailure(err) {
 
 async function init() {
   // A36: framed, js/frame.js has already put a notice in place of the page.
-  // Nothing below this line runs, so no sign-in mounts and no control is wired.
+  // Nothing below this line runs, so the kit never starts and no control is wired.
   if (framed) return;
   bindEvents();
   const load = PAGES[document.body.dataset.page];

@@ -51,7 +51,9 @@ export const state = {
   // does (C10.3). The URL is resolved per session and handed to setArtUrls.
   artRef: null,
   artUrl: null,
-  session: { signedIn: false, label: '', handle: null, isAdmin: false, checked: false },
+  // Painted from the Auth Kit's onChange (js/auth.js). `checked` turns true once
+  // the kit has settled, so a page can tell "not yet known" from "signed out".
+  session: { signedIn: false, label: '', userId: null, handle: null, isAdmin: false, checked: false },
   dirty: false,
 };
 
@@ -156,6 +158,10 @@ export function adoptTemplate(detail, s = state) {
   };
   s.artUrl = detail.artUrl || null;
   s.artRef = s.designs[s.kind]?.centre?.imageRef || null;
+  // The row's design is not a preset, so the picker outlines nothing. The
+  // last preset applied stayed lit through a load and a Randomize until the
+  // 2026-09-10 verification measured it.
+  s.presetId = null;
   s.dirty = false;
   save(s);
 }

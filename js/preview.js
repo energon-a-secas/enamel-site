@@ -23,19 +23,49 @@ const PLACEHOLDER_HANDLE = 'yourhandle';
 // the strip's own text still reads "preview, not yet issued": the kit builds that
 // line from the mode, never from this string.
 const PLACEHOLDER_VERIFY = 'https://sash.neorgon.com/badge.html?id=preview';
+// The same reasoning again, for the two things a certificate draws from the
+// provenance and nowhere else: the serial and the date line. With an empty
+// serial and a null `issuedAt` the serial face, size and colour controls and the
+// four date label controls changed nothing on screen, so an author could not
+// judge what they had picked. The serial is the shape of a real one (C4.1) and
+// is the placeholder the admin field on templates.html already shows; the date
+// is today, so "issued 14 September 2026" reads as what an award made now would
+// carry. In preview mode the strip still says "preview, not yet issued": the kit
+// builds that line from the mode, never from these values.
+const PLACEHOLDER_SERIAL = 'ab12cd34ef';
+
+/** Today, as the ISO UTC instant C1.3 wants, at the start of the day. */
+function todayIso() {
+  return `${new Date().toISOString().slice(0, 10)}T00:00:00Z`;
+}
 
 /** The C1.3 object the editor draws with. Never `mode: 'award'`. */
 export function previewProvenance() {
   return {
     origin: 'community',
     issuerHandle: state.session.handle || PLACEHOLDER_HANDLE,
-    serial: '',
+    serial: PLACEHOLDER_SERIAL,
     verifyUrl: PLACEHOLDER_VERIFY,
     holder: '',
-    issuedAt: null,
+    issuedAt: todayIso(),
     expiresAt: null,
     mode: 'preview',
   };
+}
+
+/**
+ * The provenance for the draft on screen: the preview object plus the expiry
+ * the template's own validity would give an award made today, so a certificate
+ * whose awards expire shows its "valid until" line. The download controls use
+ * this same object, which is what keeps the file and the preview one drawing.
+ */
+export function draftProvenance() {
+  const prov = previewProvenance();
+  const validity = Number(state.meta.defaultValidityMs);
+  if (Number.isFinite(validity) && validity > 0) {
+    prov.expiresAt = `${new Date(Date.now() + validity).toISOString().slice(0, 10)}T00:00:00Z`;
+  }
+  return prov;
 }
 
 let fontsWatched = false;
@@ -55,7 +85,7 @@ export function paintPreview(host, warnHost) {
 
   let svg;
   try {
-    svg = renderSvg(d, previewProvenance());
+    svg = renderSvg(d, draftProvenance());
   } catch (err) {
     // renderSvg throws only on a provenance that fails C1.3, which is this
     // page's own bug rather than the author's. Say so rather than showing an

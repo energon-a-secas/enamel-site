@@ -59,7 +59,7 @@ export async function m(name, args = {}) {
  */
 function describeTransport(err) {
   const text = String((err && err.message) || err || 'unknown error');
-  return `The Sash deployment did not answer: ${text}`;
+  return `Sash did not answer: ${text}`;
 }
 
 /**
@@ -67,12 +67,13 @@ function describeTransport(err) {
  *
  * The server writes for humans already, so most codes get nothing added here,
  * and a code whose message already says the next move gets nothing: the
- * blocked-issuer message names the term and says what to do about it, and an
- * added line only repeats it.
+ * blocked-issuer message names the term and says what to do about it, and the
+ * rate limit's says "Too many saves. Try again in 40 seconds." An added line
+ * only repeats it, and the one this map used to carry for `rate-limited`
+ * explained why the limit exists instead, which is nothing a visitor can act on.
  */
 const ADVICE = {
   'no-handle': 'A handle is claimed once, on sash.neorgon.com, and it is the issuing handle printed on every badge you make.',
-  'rate-limited': 'The limit is per account and it is there so a loop cannot probe the edges of the checks.',
 };
 
 /** One line of copy for a failure object, ready to show. */

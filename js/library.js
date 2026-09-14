@@ -11,9 +11,15 @@ import { api, q, m, failText } from './api.js';
 import { state } from './state.js';
 import { openModal } from './events.js';
 import { emptyState, templateRow, versionList } from './render.js';
+import { startCatalogue } from './catalogue.js';
 import { $, showToast } from './utils.js';
+import { NeoAuth } from './neorgon-auth.js';
 
 let rows = [];
+
+// The lede of the kit's dialog when this page asks for a sign-in. The same
+// sentence is the signed-out notice in templates.html.
+const SIGN_IN_REASON = 'Sign in to see the templates you have made.';
 
 function filtered() {
   const want = $('statusFilter')?.value || 'all';
@@ -54,6 +60,7 @@ async function showVersions(templateId) {
 }
 
 async function archive(templateId) {
+  if (!(await NeoAuth.requireSignIn({ reason: 'Sign in to archive a template.' }))) return;
   const result = await m(api.templates.archive, { templateId });
   if (!result.ok) { showToast(failText(result)); return; }
   showToast('Archived. It keeps its id and everything issued from it stays valid.');
@@ -78,7 +85,7 @@ async function adminOpen() {
     return;
   }
   host.innerHTML = templateRow(detail)
-    + `<p class="fld__hint">Owned by another account. Editing it is recorded against your own subject in the version history.</p>`;
+    + '<p class="fld__hint">Owned by another account. Editing it is recorded under your own account in the version history.</p>';
 }
 
 function paintAdmin() {
@@ -89,11 +96,13 @@ function paintAdmin() {
 /* ── entry points ──────────────────────────────────────────────────────────── */
 
 export async function start() {
+  // The catalogue is public, so it is read before the session is known rather
+  // than after: a page that waited would be blank for as long as Clerk took.
+  void startCatalogue();
   $('statusFilter')?.addEventListener('change', paint);
   $('adminOpen')?.addEventListener('click', adminOpen);
-  $('signInBtn')?.addEventListener('click', async () => {
-    const { openSignIn } = await import('./auth.js');
-    openSignIn();
+  $('signInBtn')?.addEventListener('click', (event) => {
+    void NeoAuth.openSignIn({ reason: SIGN_IN_REASON, invoker: event.currentTarget });
   });
 
   document.addEventListener('click', (event) => {

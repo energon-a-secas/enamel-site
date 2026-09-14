@@ -13,10 +13,16 @@ import { api, q, m, failText } from './api.js';
 import { state } from './state.js';
 import { emptyState, pill, KIND_LABEL } from './render.js';
 import { copyText, escHtml } from './neorgon-dom.js';
+import { PUBLIC_ID_RE } from './insignia/schema.js';
+import { NeoAuth } from './neorgon-auth.js';
 import { $, daysFromNow, fmtDate, fmtWhen, humanMs, param, showToast, splitList, stamp } from './utils.js';
 
 let template = null;
 let links = [];
+
+// The lede of the kit's dialog when this page asks for a sign-in. The same
+// sentence is the signed-out notice in links.html.
+const SIGN_IN_REASON = 'Sign in to mint a claim link and see who has claimed.';
 
 const STATE_TEXT = {
   ok: ['Live', 'good'],
@@ -113,7 +119,8 @@ async function loadLinks() {
 
 /* ── actions ───────────────────────────────────────────────────────────────── */
 
-async function mint() {
+async function mint(event) {
+  if (!(await NeoAuth.requireSignIn({ reason: SIGN_IN_REASON, invoker: event?.currentTarget }))) return;
   const days = Number($('mintExpiry')?.value || 7);
   const seatsRaw = ($('mintSeats')?.value || '').trim();
   const allow = splitList($('mintAllow')?.value).map((h) => h.replace(/^@/, '').toLowerCase());
@@ -135,6 +142,7 @@ async function mint() {
 }
 
 async function revoke(claimId) {
+  if (!(await NeoAuth.requireSignIn({ reason: 'Sign in to withdraw a claim link.' }))) return;
   const result = await m(api.claims.revoke, { claimId });
   if (!result.ok) { showToast(failText(result)); return; }
   showToast('Withdrawn. Nobody new can claim from it.');
@@ -185,12 +193,11 @@ async function paintSwitch() {
 
 export async function start() {
   $('mintBtn')?.addEventListener('click', mint);
-  $('signInBtn')?.addEventListener('click', async () => {
-    const { openSignIn } = await import('./auth.js');
-    openSignIn();
+  $('signInBtn')?.addEventListener('click', (event) => {
+    void NeoAuth.openSignIn({ reason: SIGN_IN_REASON, invoker: event.currentTarget });
   });
   const hint = $('mintHint');
-  if (hint) hint.textContent = 'The link and its expiry are minted by the deployment, not by this page.';
+  if (hint) hint.textContent = 'Sash mints the link and sets its expiry when you press Mint link.';
 
   $('linkList')?.addEventListener('click', async (event) => {
     const button = event.target.closest('button[data-action]');
@@ -211,11 +218,19 @@ export async function onSession() {
   const out = $('signedOut');
   if (out) out.hidden = state.session.signedIn;
 
-  const wanted = param('t');
-  if (wanted) {
+  const wanted = param('t').toLowerCase();
+  // The same gate every other lookup applies (C4.1): a value that is not the
+  // shape of a public id never reaches the deployment.
+  if (wanted && !PUBLIC_ID_RE.test(wanted)) {
+    showToast('That link does not name a template. A public id is ten characters from the Crockford alphabet.');
+  } else if (wanted) {
     const detail = await q(api.templates.get, { publicId: wanted });
     template = detail || null;
-    if (!detail) showToast('That template is not readable from this account.');
+    if (!detail) {
+      showToast(state.session.signedIn
+        ? 'That template is not readable from this account.'
+        : 'No published template has that id. If it is a draft of yours, sign in.');
+    }
   }
   paintHead();
   await paintSwitch();

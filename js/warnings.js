@@ -189,6 +189,57 @@ function arcWarnings(badge, lengths, where) {
   return out;
 }
 
+/* ── the ribbon and the bottom arc share the foot ──────────────────────────── */
+
+// The renderer's bands in the 512 field: the ribbon plate runs 336 to 394 and
+// the bottom arc's baseline sits at 430 on radius 174, so the arc's ends climb
+// to 369 and a line long enough puts its glyphs under the plate. C15 A26 found
+// the contract's own example doing it and took the ribbon out of the example;
+// the 2026-09-10 verification found the editor letting an author do the same
+// with nothing said. The plate is drawn after the arc, so the plate wins.
+const RIBBON_TOP = 336;
+const RIBBON_BOTTOM = 394;
+
+/**
+ * How far, in field units, the drawn bottom arc reaches into the ribbon band.
+ * Read off the preview's own text node where the engine will measure, so the
+ * loaded face and the tracking are what is measured; modelled from the arc
+ * geometry when it will not.
+ */
+export function arcUnderRibbon(root, arc, length) {
+  let top = null;
+  let bottom = null;
+  const text = root && Array.from(root.querySelectorAll('textPath'))
+    .find((tp) => (tp.getAttribute('href') || '').includes('arcbot'))?.parentNode;
+  if (text) {
+    try {
+      const box = text.getBBox();
+      if (box && box.height > 0) { top = box.y; bottom = box.y + box.height; }
+    } catch { /* fall through to the model */ }
+  }
+  if (top === null) {
+    const half = Math.min(0.5, (length || 0) / (2 * Math.PI * BOTTOM_ARC_R));
+    const endY = CY + BOTTOM_ARC_R * Math.cos(Math.PI * half);
+    top = endY - arc.size * 0.75;
+    bottom = endY;
+  }
+  return Math.max(0, Math.min(bottom, RIBBON_BOTTOM) - Math.max(top, RIBBON_TOP));
+}
+
+function ribbonWarning(badge, lengths, root, where) {
+  const arc = badge.arcs.bottom;
+  if (!badge.ribbon || !arc || !arc.text) return null;
+  const overlap = arcUnderRibbon(root, arc, lengths.bottom);
+  if (!(overlap > 0)) return null;
+  return {
+    level: 'warn',
+    title: `The ribbon covers the bottom arc${where}`,
+    body: `The ribbon draws its plate from ${RIBBON_TOP} to ${RIBBON_BOTTOM} on the 512 field and the bottom arc `
+      + `reaches ${overlap.toFixed(0)} units up into it, so the plate hides the top of those words. `
+      + 'Shorten the arc, drop its size, or put the words on the ribbon and switch the arc off.',
+  };
+}
+
 function stripWarning(badge) {
   const plate = composite(badge.palette.ink, badge.palette.base, 0.86);
   const line = composite('#e7e9ff', `#${plate.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`, 0.92);
@@ -226,16 +277,22 @@ function bandWarning(cert) {
 export function warningsFor(design, root) {
   const out = [];
   for (const problem of validateDesign(design)) {
-    out.push({ level: 'error', title: 'The deployment will refuse this design', body: problem });
+    out.push({ level: 'error', title: 'Sash will refuse this design', body: problem });
   }
 
   if (design.kind === 'badge') {
-    out.push(...arcWarnings(design, measureArcs(root, design), ''));
+    const lengths = measureArcs(root, design);
+    out.push(...arcWarnings(design, lengths, ''));
+    const ribbon = ribbonWarning(design, lengths, root, '');
+    if (ribbon) out.push(ribbon);
     const strip = stripWarning(design);
     if (strip) out.push(strip);
   } else {
     if (design.seal.design) {
-      out.push(...arcWarnings(design.seal.design, measureArcs(root, design.seal.design), ' on the seal'));
+      const lengths = measureArcs(root, design.seal.design);
+      out.push(...arcWarnings(design.seal.design, lengths, ' on the seal'));
+      const ribbon = ribbonWarning(design.seal.design, lengths, root, ' on the seal');
+      if (ribbon) out.push(ribbon);
     }
     const band = bandWarning(design);
     if (band) out.push(band);

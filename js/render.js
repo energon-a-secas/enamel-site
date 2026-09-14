@@ -12,13 +12,17 @@ import { previewProvenance } from './preview.js';
 export const STATUS_LABEL = { draft: 'Draft', published: 'Published', archived: 'Archived' };
 export const KIND_LABEL = { badge: 'Badge', certificate: 'Certificate' };
 
-/** A small drawing of a design, for a picker or a list row. */
-export function thumb(design, size = 132) {
+/**
+ * A small drawing of a design, for a picker or a list row. The provenance
+ * defaults to the preview's; a catalogue row passes its own so the strip names
+ * that row's origin and issuer rather than the visitor's.
+ */
+export function thumb(design, size = 132, provenance = previewProvenance()) {
   const wrap = document.createElement('div');
   wrap.className = 'thumb';
   wrap.style.setProperty('--thumb-size', `${size}px`);
   try {
-    const svg = renderSvg(design, previewProvenance());
+    const svg = renderSvg(design, provenance);
     svg.removeAttribute('width');
     svg.removeAttribute('height');
     wrap.appendChild(svg);
@@ -96,6 +100,26 @@ export function templateRow(row) {
       ${row.status === 'archived'
         ? ''
         : `<button type="button" class="btn btn--ghost btn--sm" data-action="archive" data-id="${escHtml(row.templateId)}">Archive</button>`}
+    </div>
+  </article>`;
+}
+
+/** One template in the public catalogue. `js/catalogue.js` fills the thumbnail slot. */
+export function catalogueCard(row) {
+  const issuer = row.origin === 'neorgon' ? 'Neorgon' : (row.issuerHandle ? `@${row.issuerHandle}` : 'community');
+  return `<article class="card catalogue__card" data-public-id="${escHtml(row.publicId)}">
+    <div class="catalogue__thumb" data-thumb><span class="fld__hint">Drawing it.</span></div>
+    <div class="catalogue__body">
+      <h3 class="template__name">${escHtml(row.name || 'Untitled')}</h3>
+      <p class="template__meta">
+        ${pill(KIND_LABEL[row.kind] || row.kind)}
+        ${pill(issuer, row.origin === 'neorgon' ? 'good' : '')}
+        ${pill(row.category)}
+      </p>
+      ${row.description ? `<p class="template__desc">${escHtml(row.description)}</p>` : ''}
+      <div class="toolbar">
+        <a class="btn btn--secondary btn--sm" href="./?t=${encodeURIComponent(row.publicId)}">Open in the studio</a>
+      </div>
     </div>
   </article>`;
 }

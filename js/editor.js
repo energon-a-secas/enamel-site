@@ -53,17 +53,22 @@ function colorHtml(field, value) {
     </span>${hint(field)}</label>`;
 }
 
+/**
+ * A row of unlabelled controls, so every one carries its own name, numbered:
+ * three rings give three "Ring style" selects otherwise, and a screen reader
+ * cannot tell them apart.
+ */
 function ringsHtml(rings) {
   const rows = rings.map((r, i) => `<div class="repeat__row">
-    <select class="fld__input fld__input--mini" data-path="rings.${i}.style" data-cast="str">
+    <select class="fld__input fld__input--mini" data-path="rings.${i}.style" data-cast="str" title="Style" aria-label="Ring ${i + 1} style">
       ${RING_STYLES.map((s) => opt(s, r.style)).join('')}
     </select>
     <input class="fld__input fld__input--mini" type="number" min="1" max="64" step="1" value="${escHtml(r.width)}"
-      data-path="rings.${i}.width" data-cast="num" title="Weight" aria-label="Ring weight">
+      data-path="rings.${i}.width" data-cast="num" title="Weight" aria-label="Ring ${i + 1} weight">
     <input class="fld__input fld__input--mini" type="number" min="0" max="128" step="1" value="${escHtml(r.inset)}"
-      data-path="rings.${i}.inset" data-cast="num" title="Inset" aria-label="Ring inset">
-    <input class="fld__color" type="color" value="${escHtml(r.color)}" data-path="rings.${i}.color" data-cast="str" aria-label="Ring colour">
-    <button type="button" class="btn btn--ghost btn--sm" data-action="ring-remove" data-index="${i}">Remove</button>
+      data-path="rings.${i}.inset" data-cast="num" title="Inset" aria-label="Ring ${i + 1} inset">
+    <input class="fld__color" type="color" value="${escHtml(r.color)}" data-path="rings.${i}.color" data-cast="str" aria-label="Ring ${i + 1} colour">
+    <button type="button" class="btn btn--ghost btn--sm" data-action="ring-remove" data-index="${i}" aria-label="Remove ring ${i + 1}">Remove</button>
   </div>`).join('');
   const add = rings.length < 3
     ? '<button type="button" class="btn btn--ghost btn--sm" data-action="ring-add">Add a ring</button>'
@@ -75,10 +80,10 @@ function ringsHtml(rings) {
 function signaturesHtml(sigs) {
   const rows = sigs.map((s, i) => `<div class="repeat__row">
     <input class="fld__input fld__input--mini" value="${escHtml(s.name)}" placeholder="Name"
-      data-path="signatures.${i}.name" data-cast="str" aria-label="Signature name">
+      data-path="signatures.${i}.name" data-cast="str" aria-label="Signature ${i + 1} name">
     <input class="fld__input fld__input--mini" value="${escHtml(s.role)}" placeholder="Role"
-      data-path="signatures.${i}.role" data-cast="str" aria-label="Signature role">
-    <button type="button" class="btn btn--ghost btn--sm" data-action="sig-remove" data-index="${i}">Remove</button>
+      data-path="signatures.${i}.role" data-cast="str" aria-label="Signature ${i + 1} role">
+    <button type="button" class="btn btn--ghost btn--sm" data-action="sig-remove" data-index="${i}" aria-label="Remove signature ${i + 1}">Remove</button>
   </div>`).join('');
   const add = sigs.length < 2
     ? '<button type="button" class="btn btn--ghost btn--sm" data-action="sig-add">Add a signature</button>'
@@ -113,11 +118,13 @@ function sealHtml(current) {
     '<option value="badge-draft">Copy the badge I am designing</option>',
     ...presetsFor('badge').map((p) => `<option value="${escHtml(p.id)}">Copy the ${escHtml(p.name)} preset</option>`),
   ];
-  return `<div class="fld"><span class="fld__label">Seal</span>
+  // A <label>, like every other select here: a <div> around the same markup
+  // left this the one select in the form with no accessible name.
+  return `<label class="fld"><span class="fld__label">Seal</span>
     <select class="fld__input" data-action="seal-set">${options.join('')}</select>
     <span class="fld__hint">${current
       ? 'The copy is embedded by value. Editing that badge afterwards does not change this certificate.'
-      : 'A seal is a whole badge document, copied in at the moment you choose it.'}</span></div>`;
+      : 'A seal is a whole badge document, copied in at the moment you choose it.'}</span></label>`;
 }
 
 function artHtml(current) {
@@ -185,15 +192,52 @@ function pairingHtml() {
     </label></div></div>`;
 }
 
-/** Rebuild the whole form. Cheap enough to do on any structural change. */
+/**
+ * The declared shape of the form: which fields exist, in order. `fields.js`
+ * declares a dependent control conditionally on its parent's value, so a write
+ * that changes this string is a write the rendered form is now out of step
+ * with, whatever control made it. That is what decides a rebuild below, rather
+ * than a flag each gate would have to remember to carry.
+ */
+function formShape(d, meta) {
+  return groupsFor(d, meta).map((g) => g.fields.map((f) => `${f.path}/${f.type}`).join(',')).join('|');
+}
+
+let renderedShape = '';
+
+/**
+ * Rebuild the whole form. Cheap enough to do on any structural change.
+ *
+ * A rebuild replaces every node, so two things a person had are carried over:
+ * which groups they opened, and the control that held focus. Without the first,
+ * changing "What sits in the middle" folded the Centre group shut; without the
+ * second, a keyboard user was dropped back to the top of the page on every
+ * select that has dependents.
+ */
 export function renderEditor(root) {
   const d = design();
   const groups = groupsFor(d, state.meta);
+  const wasOpen = new Map();
+  for (const el of root.querySelectorAll('details[data-group]')) wasOpen.set(el.dataset.group, el.open);
+  const active = document.activeElement;
+  const focused = active && root.contains(active) ? focusSelector(active) : null;
+
   root.innerHTML = pairingHtml() + groups.map((g) => `
-    <details class="editor__group" ${g.open ? 'open' : ''}>
+    <details class="editor__group" data-group="${escHtml(g.id)}" ${(wasOpen.has(g.id) ? wasOpen.get(g.id) : g.open) ? 'open' : ''}>
       <summary class="editor__summary">${escHtml(g.title)}</summary>
       <div class="editor__body">${g.fields.map((field) => fieldHtml(field, d)).join('')}</div>
     </details>`).join('');
+  renderedShape = formShape(d, state.meta);
+
+  if (focused) root.querySelector(focused)?.focus({ preventScroll: true });
+}
+
+/** The attribute that identifies a control across a rebuild, as a selector. */
+function focusSelector(el) {
+  for (const key of ['path', 'toggle', 'action']) {
+    if (el.dataset[key]) return `[data-${key}="${el.dataset[key].replace(/"/g, '')}"]`;
+  }
+  return null;
 }
 
 /* ── writes ────────────────────────────────────────────────────────────────── */
@@ -227,6 +271,20 @@ function reconcileMeta() {
   if (meta.category !== 'recognition' && meta.category !== 'meme') meta.stackable = false;
 }
 
+/**
+ * C1.2 fixes a certificate's aspect at the ISO A ratio in both orientations, so
+ * `orientation` and `size` are one fact written in two fields. The page offers
+ * no size control, which makes a swap the whole of keeping them in step: a
+ * select that flipped one without the other produced a design the deployment
+ * refuses and a preview that never moved.
+ */
+function followOrientation(d) {
+  if (d.kind !== 'certificate' || !d.size) return;
+  const landscape = d.orientation === 'landscape';
+  if ((d.size.w >= d.size.h) !== landscape) d.size = { w: d.size.h, h: d.size.w };
+}
+
+/** Write one control's value. Returns true when the form must be rebuilt. */
 function applyWrite(el) {
   const path = el.dataset.path;
   if (!path) return false;
@@ -236,9 +294,10 @@ function applyWrite(el) {
     reconcileMeta();
   } else {
     setPath(design(), path, value);
+    if (path === 'orientation') followOrientation(design());
   }
   state.dirty = true;
-  return el.dataset.rerender === '1';
+  return el.dataset.rerender === '1' || formShape(design(), state.meta) !== renderedShape;
 }
 
 function applyToggle(el) {
@@ -344,7 +403,10 @@ export function initEditor(root, onChange, onArt) {
       const hex = el.closest('.fld')?.querySelector('.fld__hex');
       if (hex) hex.textContent = el.value;
     }
-    if (rerender) renderEditor(root);
+    // A range fires `input` on every tick of a drag, and a rebuild in the
+    // middle of one replaces the slider under the pointer. Its dependents
+    // (pips lit, for one) appear on `change`, which fires when the drag ends.
+    if (rerender && !(el.type === 'range' && event.type === 'input')) renderEditor(root);
     notify();
   };
 

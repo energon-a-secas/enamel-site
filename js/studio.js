@@ -9,19 +9,27 @@
  * version, and a version is frozen the moment it exists (C2.4).
  */
 import { api, m, q, failText } from './api.js';
-import { state, design, setDesign, loadSaved, save, adoptTemplate } from './state.js';
+import { state, design, setDesign, loadSaved, save, adoptTemplate, resetDraft } from './state.js';
 import { initEditor, renderEditor, applyPairing } from './editor.js';
 import { paintPreview, startFonts } from './preview.js';
+import { bindExport } from './exporting.js';
 import { presetGrid } from './render.js';
 import { openModal, closeModal } from './events.js';
 import { attachNewArt, pickImage } from './art.js';
 import { presetDesign, randomDesign } from './insignia/data/presets.js';
+import { PUBLIC_ID_RE } from './insignia/schema.js';
 import { debounce } from './neorgon-dom.js';
+import { NeoAuth } from './neorgon-auth.js';
 import { $, param, showToast } from './utils.js';
 
 let editorRoot = null;
 let previewHost = null;
 let warnHost = null;
+
+// The lede of the kit's dialog when this page asks for a sign-in, and the one
+// sentence next to the disabled controls that says the same thing.
+const SIGN_IN_REASON = 'Sign in to save this design to Sash and publish it.';
+const ART_REASON = 'Sign in to upload an image.';
 
 const repaint = debounce(() => {
   paintPreview(previewHost, warnHost);
@@ -44,10 +52,35 @@ function paintSaveState() {
   el.textContent = bits.join(' · ');
 
   const canWrite = state.session.signedIn;
-  $('saveDraftBtn')?.toggleAttribute('disabled', !canWrite);
-  $('publishBtn')?.toggleAttribute('disabled', !canWrite);
+  // Before the kit has settled nothing is said: on a host with a session the
+  // controls would otherwise flash "sign in" at somebody already signed in.
+  const askSignIn = state.session.checked && !canWrite;
+  for (const id of ['saveDraftBtn', 'publishBtn']) {
+    const button = $(id);
+    if (!button) continue;
+    button.toggleAttribute('disabled', !canWrite);
+    // A disabled control is skipped by Tab, so the reason is attached to it
+    // for a reader that lands on it another way, and detached once signed in
+    // so nobody is told to sign in twice.
+    if (askSignIn) button.setAttribute('aria-describedby', 'signInNotice');
+    else button.removeAttribute('aria-describedby');
+  }
+  const ask = $('signInNotice');
+  if (ask) ask.hidden = !askSignIn;
   const notice = $('handleNotice');
   if (notice) notice.hidden = !(canWrite && !state.session.handle);
+}
+
+/**
+ * Keep the address bar honest: `?t=` names the template on screen, or nothing.
+ * A URL that named a template the page was not showing is how a link followed
+ * with unsaved work on the bench came to look as if it had opened (ENAMEL-02).
+ */
+function pointUrlAt(publicId) {
+  const url = new URL(location.href);
+  if (publicId) url.searchParams.set('t', publicId);
+  else url.searchParams.delete('t');
+  history.replaceState(null, '', url);
 }
 
 function showBlocked(res) {
@@ -95,9 +128,7 @@ async function saveToSash() {
     state.status = 'draft';
     state.dirty = false;
     save();
-    const url = new URL(location.href);
-    url.searchParams.set('t', created.publicId);
-    history.replaceState(null, '', url);
+    pointUrlAt(created.publicId);
     return { ok: true };
   }
 
@@ -110,7 +141,8 @@ async function saveToSash() {
   return { ok: true };
 }
 
-async function onSaveDraft() {
+async function onSaveDraft(event) {
+  if (!(await NeoAuth.requireSignIn({ reason: SIGN_IN_REASON, invoker: event?.currentTarget }))) return;
   showBlocked(null);
   const result = await saveToSash();
   if (!result.ok) {
@@ -123,6 +155,9 @@ async function onSaveDraft() {
 }
 
 async function onPublish() {
+  // The session can lapse while the modal is open. The kit's dialog then sits
+  // over it, and a dismissed dialog leaves the modal where it was.
+  if (!(await NeoAuth.requireSignIn({ reason: SIGN_IN_REASON }))) return;
   showBlocked(null);
   const changelog = ($('changelogInput')?.value || '').trim();
   const saved = await saveToSash();
@@ -147,7 +182,8 @@ async function onPublish() {
   showToast(`Published as version ${published.n}.`);
 }
 
-function openPublish() {
+async function openPublish(event) {
+  if (!(await NeoAuth.requireSignIn({ reason: SIGN_IN_REASON, invoker: event?.currentTarget }))) return;
   const hint = $('publishHint');
   if (hint) {
     hint.textContent = state.versionN
@@ -187,7 +223,9 @@ async function onArt(what) {
     repaint();
     return;
   }
-  if (!state.session.signedIn) { showToast('Sign in to upload an image.'); abandonImage(); return; }
+  // Signed out, the kit's dialog asks instead of a toast; a dismissed dialog
+  // puts the centre back on a glyph, as a cancelled file picker does.
+  if (!(await NeoAuth.requireSignIn({ reason: ART_REASON }))) { abandonImage(); return; }
 
   const file = await pickImage();
   if (!file) { abandonImage(); return; }
@@ -237,9 +275,29 @@ function applyPreset(id) {
 
 function onRandomize() {
   setDesign(randomDesign(state.kind));
+  // A random design is nobody's preset, so the picker outlines nothing.
+  state.presetId = null;
   applyPairing(design(), state.pairingId);
   renderEditor(editorRoot);
   repaint();
+}
+
+/**
+ * Forget the local draft and start from the default preset. Behind a confirm,
+ * because it is the one control on the page that throws work away; what it
+ * throws away is only what this browser holds. A template saved to Sash keeps
+ * its rows, and the studio simply stops pointing at it.
+ */
+function onStartOver() {
+  const sure = window.confirm('Start over? This forgets the design and the template details held in this browser. Anything already saved to Sash stays there.');
+  if (!sure) return;
+  resetDraft();
+  pointUrlAt(null);
+  paintKind();
+  renderEditor(editorRoot);
+  paintPreview(previewHost, warnHost);
+  paintSaveState();
+  showToast('Started over. Anything saved to Sash is still there.');
 }
 
 function setKind(kind) {
@@ -252,9 +310,7 @@ function setKind(kind) {
     state.templateKind = null;
     state.status = 'draft';
     state.versionN = 0;
-    const url = new URL(location.href);
-    url.searchParams.delete('t');
-    history.replaceState(null, '', url);
+    pointUrlAt(null);
     showToast('A template keeps the kind it was made as, so this is a new design. The other one is untouched.');
   }
   state.kind = kind;
@@ -279,12 +335,19 @@ async function loadTemplate(publicId) {
   // quietly take an author's unsaved work with it. The URL keeps the id, so
   // saving and reloading opens it.
   if (state.dirty && state.publicId !== publicId) {
-    showToast('There are unsaved changes here, so that link was not opened. Save this design first.');
+    showToast('There are unsaved changes here, so that link was not opened. Save this design first, or use Start over to drop the changes, then open the link again.');
+    // The page is still showing what it was showing. Say so in the URL too,
+    // rather than leaving it naming the template that was refused.
+    pointUrlAt(state.publicId);
     return;
   }
   const detail = await q(api.templates.get, { publicId });
   if (!detail) {
-    showToast('That template is not readable from this account.');
+    // Signed out there is no account to blame: only a published template is
+    // readable without one, and a draft of yours wants a sign-in first.
+    showToast(state.session.signedIn
+      ? 'That template is not readable from this account.'
+      : 'No published template has that id. If it is a draft of yours, sign in.');
     return;
   }
   adoptTemplate(detail);
@@ -315,9 +378,14 @@ export async function start() {
   }
   $('presetBtn')?.addEventListener('click', openPresets);
   $('randomBtn')?.addEventListener('click', onRandomize);
+  $('resetBtn')?.addEventListener('click', onStartOver);
+  bindExport();
   $('saveDraftBtn')?.addEventListener('click', onSaveDraft);
   $('publishBtn')?.addEventListener('click', openPublish);
   $('publishConfirm')?.addEventListener('click', onPublish);
+  $('signInBtn')?.addEventListener('click', (event) => {
+    void NeoAuth.openSignIn({ reason: SIGN_IN_REASON, invoker: event.currentTarget });
+  });
   $('presetGrid')?.addEventListener('click', (event) => {
     const button = event.target.closest('[data-preset]');
     if (button) applyPreset(button.dataset.preset);
@@ -327,12 +395,18 @@ export async function start() {
 /** Called after every session change, once the handle is known. */
 export async function onSession() {
   paintSaveState();
-  const wanted = param('t');
-  if (wanted && state.session.signedIn && wanted !== state.publicId) {
-    await loadTemplate(wanted);
-  } else if (wanted && !state.templateId && !state.session.signedIn) {
-    // A published template is readable by anyone, so an unsigned visitor
-    // arriving on a link still gets to see it.
-    await loadTemplate(wanted);
+  const wanted = param('t').toLowerCase();
+  if (!wanted) return;
+  // The same gate every other lookup applies (C4.1): a value that is not the
+  // shape of a public id never reaches the deployment. A 10,000-character
+  // parameter used to go out as a 10 KB query and come back as a toast that
+  // blamed the account.
+  if (!PUBLIC_ID_RE.test(wanted)) {
+    showToast('That link does not name a template. A public id is ten characters from the Crockford alphabet.');
+    return;
   }
+  // A published template is readable by anyone, so a visitor arriving on a
+  // link gets to see it signed in or not. Only the template already on screen
+  // is left alone: the session can change more than once on one page.
+  if (wanted !== state.publicId) await loadTemplate(wanted);
 }
