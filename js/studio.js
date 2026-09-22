@@ -17,7 +17,7 @@ import { firstVisit, isEmpty, showEmptyState, refreshEmptyState, leaveEmptyState
 import { bindExport } from './exporting.js';
 import { presetGrid } from './render.js';
 import { openModal, closeModal } from './events.js';
-import { attachNewArt, pickImage } from './art.js';
+import { attachNewArt, artCaption, pickImage } from './art.js';
 import { presetDesign, randomDesign } from './insignia/data/presets.js';
 import { PUBLIC_ID_RE } from './insignia/schema.js';
 import { debounce } from './neorgon-dom.js';
@@ -266,7 +266,9 @@ async function onArt(what) {
   state.dirty = true;
   renderEditor(editorRoot);
   repaint();
-  showToast('Image attached. Save the draft to keep it in the design.');
+  // The caption the form shows under the thumbnail, said at the moment it
+  // happens, so a favicon author hears "scaled up 32 times as pixel art".
+  showToast(`Image attached. ${artCaption(result.info)} Save the draft to keep it in the design.`);
 }
 
 /* ── presets, randomize, kind ──────────────────────────────────────────────── */

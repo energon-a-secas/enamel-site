@@ -154,7 +154,9 @@ function badgeGroups(d) {
         ] : []),
         ...(d.centre.kind === 'none' ? [] : [
           f('centre.plate', 'Plate', 'select', { options: labelled(CENTRE_PLATES, CENTRE_PLATE_LABELS),
-            hint: 'A plate is the mask outline drawn a little larger under the mark, so a transparent mark sits on a consistent field.' }),
+            hint: d.centre.kind === 'image'
+              ? 'A plate is the mask outline drawn a little larger under the mark, so a transparent mark sits on a consistent field.'
+              : 'A plate is a round field drawn a little larger under the glyph, so it sits on consistent ground.' }),
           ...(d.centre.plate === 'solid' ? [f('centre.plateColor', 'Plate colour', 'color')] : []),
           f('centre.scale', 'Size', 'range', { min: 0.2, max: 2, step: 0.05 }),
           f('centre.rotation', 'Rotation', 'range', { min: -180, max: 180, step: 1 }),
@@ -217,7 +219,7 @@ function certificateGroups(d) {
           { hint: "Dated with the issue date, in the issuing handle's name. Nothing on it is yours to write." }),
         ...(d.stamp.show ? [
           f('stamp.x', 'Across', 'range', { min: 0, max: 1, step: 0.01 }),
-          f('stamp.y', 'Down', 'range', { min: 0, max: 1, step: 0.01 }),
+          f('stamp.y', 'Down', 'range', { min: 0, max: 1, step: 0.01, hint: 'Stops above the provenance band.' }),
           f('stamp.size', 'Stamp size', 'range', { min: 100, max: 300, step: 5 }),
         ] : []),
       ],
@@ -237,9 +239,13 @@ function certificateGroups(d) {
         f('signatures', 'Signatures', 'signatures'),
         f('serial.style', 'Serial style', 'select', { options: labelled(SERIAL_STYLES, SERIAL_STYLE_LABELS),
           hint: 'The record block draws the serial large, the QR in a crop-mark frame, and the dates in a small table.' }),
-        f('serial.font', 'Serial face', 'select', { options: roles() }),
-        f('serial.size', 'Serial size', 'range', { min: 8, max: 64, step: 1 }),
-        f('serial.color', 'Serial colour', 'color'),
+        // The record block draws the serial in the mono role at 34 to 40 in the
+        // accent (plan 2.2), so these three are not read while it is picked.
+        ...(d.serial.style === 'loud' ? [] : [
+          f('serial.font', 'Serial face', 'select', { options: roles() }),
+          f('serial.size', 'Serial size', 'range', { min: 8, max: 64, step: 1 }),
+          f('serial.color', 'Serial colour', 'color'),
+        ]),
         f('verify.qr', 'Draw the QR', 'check'),
         f('verify.size', 'QR size', 'range', { min: 60, max: 400, step: 5,
           hint: 'The square in the preview is drawn at the size it will take. It encodes a placeholder here and the real verify address once the award exists.' }),

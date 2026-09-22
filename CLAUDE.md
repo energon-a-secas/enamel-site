@@ -23,31 +23,34 @@ Then open http://localhost:8885. It must be served over HTTP, because the app is
 | `js/insignia/render.js` | 499 | `setArtUrls`, `artUrl`, `nextId`, `familyFor`, `renderSvg` |
 | `js/insignia/certificate.js` | 498 | `formatDate`, `layoutText`, `certificateRuns`, `drawCertificate`, `qrMatrix` |
 | `js/insignia/export.js` | 453 | `FAMILY_SUBSETS`, `familyCovers`, `partitionChars`, `fieldLabel`, `fallbackRuns` |
-| `js/editor.js` | 431 | `renderEditor`, `applyPairing`, `initEditor` |
+| `js/studio.js` | 485 | `start`, `onSession` |
+| `js/warnings.js` | 493 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside`, `arcCut`, `stripRatio`, `bandWorst`, `warningsFor` |
+| `js/editor.js` | 478 | `renderEditor`, `applyPairing`, `initEditor` |
 | `js/neorgon-footer.js` | 420 | none |
-| `js/studio.js` | 412 | `start`, `onSession` |
 | `js/insignia/wallet.js` | 369 | `isImported`, `provenanceOf`, `renderAwardCard`, `renderAwardGrid`, `buildProfileSvg` |
 | `js/insignia/openbadges.js` | 306 | `OB3_KEYWORD`, `OB2_KEYWORD`, `OB3_NS`, `OB2_NS`, `crc32` |
-| `js/warnings.js` | 301 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside` |
 | `js/insignia/patterns.js` | 271 | `SVG_NS`, `svgEl`, `n`, `CONTROL_RE`, `hasControl` |
 | `js/neorgon-beacon.js` | 262 | none |
 | `js/insignia/data/certificates.js` | 260 | `CERTIFICATE_PRESETS` |
 | `js/insignia/data/badges.js` | 258 | `badge`, `BADGE_PRESETS` |
-| `js/fields.js` | 239 | `ROLE_LABELS`, `CATEGORY_LABELS`, `ACCESS_LABELS`, `VALIDITY_CHOICES`, `metaGroup` |
+| `js/fields.js` | 315 | `ROLE_LABELS`, `CATEGORY_LABELS`, `ACCESS_LABELS`, `VALIDITY_CHOICES`, `hasArt`, `metaGroup`, `groupsFor` |
+| `js/preview.js` | 273 | `previewProvenance`, `draftProvenance`, `paintPreview`, `fixAt`, `paintContext`, `setLoupe`, `startFonts` |
+| `js/art.js` | 241 | `MAX_ART_BYTES`, `pickImage`, `rasterise`, `artInfo`, `artCaption`, `uploadArt`, `attachNewArt` |
+| `js/fixes.js` | 227 | `stepLightness`, `stepToContrast`, `darkenInk`, `ribbonWords`, `fixesFor`, `withFixes`, `applyFix` |
 | `js/links.js` | 238 | `start`, `onSession` |
 | `js/utils.js` | 181 | `$`, `showToast`, `clone`, `getPath`, `setPath` |
 | `js/state.js` | 167 | `blankMeta`, `state`, `design`, `setDesign`, `loadSaved` |
 | `js/neorgon-dom.js` | 156 | `escHtml`, `debounce`, `throttle`, `clamp`, `uid` |
 | `js/render.js` | 139 | `STATUS_LABEL`, `KIND_LABEL`, `thumb`, `presetGrid`, `emptyState` |
 | `js/insignia/shapes.js` | 138 | `SHAPE_VIEWBOX`, `SHAPE_FIELD`, `SHAPES`, `SHAPE_LIST`, `shapePath` |
-| `js/preview.js` | 133 | `previewProvenance`, `draftProvenance`, `paintPreview`, `startFonts` |
-| `js/art.js` | 126 | `MAX_ART_BYTES`, `pickImage`, `shrink`, `uploadArt`, `attachNewArt` |
+| `js/palette.js` | 137 | `FALLBACK_INK`, `paletteFrom`, `applyPalette` (LOGO-05, never automatic) |
 | `js/insignia/data/presets.js` | 125 | `PRESETS`, `DEFAULT_PRESET`, `presetsFor`, `preset`, `presetDesign` |
 | `js/library.js` | 122 | `start`, `onSession` |
 | `js/insignia/data/fonts.js` | 120 | `PAIRING_SLOTS`, `PAIRINGS`, `PAIRING_LIST`, `pairing`, `badgeFonts` |
 | `js/insignia/glyphs.js` | 111 | `GLYPH_FIELD`, `GLYPHS`, `GLYPH_LIST`, `glyphNode` |
 | `js/catalogue.js` | 102 | `startCatalogue` |
 | `js/frame.js` | 99 | `framed` |
+| `js/empty-state.js` | 94 | `firstVisit`, `isEmpty`, `showEmptyState`, `refreshEmptyState`, `leaveEmptyState`, `focusWords` |
 | `js/events.js` | 95 | `openModal`, `closeModal`, `bindEvents` |
 | `js/api.js` | 84 | `isAuthError`, `q`, `m`, `failText` |
 | `js/auth.js` | 81 | `initAuth` |
@@ -95,7 +98,9 @@ no deployment is not a page that should half work.
 
 - `localStorage['enamel-studio-v1']`: the working draft, one design per kind,
   plus the metadata and the id of the template on Sash. It is a convenience for
-  a refresh; the template row is the record.
+  a refresh; the template row is the record. The key is `STORAGE_KEY`, exported
+  by `js/state.js`; `js/empty-state.js` imports it to ask whether a first visit
+  is a first visit, so the name lives once.
 
 ## Conventions
 
@@ -200,6 +205,13 @@ on a plain `<div>`, so `.editor__group:not([open]) > .editor__body { display:non
 hid a control that is meant to be visible at all times. The rule is scoped to
 `details.editor__group` now. A div can never carry `open`, so `:not([open])`
 always matches one.
+
+**The studio stage is sticky and scrolls inside itself when taller than the
+window.** The context row (the wallet card at 180, the embed tile, the bare 48,
+or the A4 sheet and its wall card) sits under the main preview, so at 1280 by
+900 the stage column scrolls internally; a test that wants the sheet reaches it
+with `scrollIntoViewIfNeeded` on an element inside `#previewStage`, not by
+scrolling the page.
 
 **The two authoring warnings are graded, not binary.** `js/warnings.js` measures
 arc text against the silhouette with `isPointInFill` over 42 sample points, the

@@ -13,9 +13,10 @@
  *        pale plate. The strip is the control C11.1 requires to be legible.
  *   U3   an arc longer than its path is cut. The 48 in C1.1 is a string cap and
  *        `arcOutside` only samples the path that exists, so a 48-character top
- *        arc at size 40 drew as a fragment with nothing said. Chromium drops the
- *        glyphs that fall off both ends of the path, so what survives is the
- *        middle of the line, and the warning quotes it.
+ *        arc at size 40 drew as a fragment with nothing said. Every engine drops
+ *        the glyphs that fall off both ends of the path, so what survives is the
+ *        middle of the line, and the warning quotes it. D2: measured on the path,
+ *        Firefox and WebKit report the run that fits, so it is measured off it.
  *   V10  arc and ribbon words can sit on a ground they do not read against.
  *        Meme palettes put pale words on pale bases and nothing measured it.
  *
@@ -26,6 +27,8 @@
  */
 import { validateDesign, SHAPE_IDS } from './insignia/schema.js';
 import { SHAPES } from './insignia/shapes.js';
+import { materialStops } from './insignia/finish.js';
+import { isLightBase, stampCentre, stampGeometry } from './insignia/security.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const FIELD = 512;
@@ -41,9 +44,8 @@ export const ARC_SAMPLES = 42;
  * silence. WCAG AA for normal text is 4.5:1 and for large text 3:1, and these
  * lines sit between the two definitions: 20 units on a 512 badge is large,
  * 26 units on a 1684 certificate is not. So under 3:1 is a warning, and between
- * 3:1 and 4.5:1 is worth a look. The twelve badge presets run 13.8:1 to 16.8:1
- * and the one certificate that lands in the middle band is the light-ground one,
- * at 4.4:1, which is a deliberate design rather than a mistake.
+ * 3:1 and 4.5:1 is worth a look. The twelve badge presets run 13.8:1 to 16.8:1;
+ * the one certificate in the middle band is the light-ground one, 4.4:1, by design.
  */
 export const MIN_STRIP_CONTRAST = 4.5;
 export const BAD_STRIP_CONTRAST = 3;
@@ -70,10 +72,7 @@ function composite(over, under, alpha) {
 }
 
 function luminance(channels) {
-  const lin = channels.map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
+  const lin = channels.map((c) => c / 255).map((s) => (s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4));
   return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
 }
 
@@ -98,36 +97,38 @@ export function towardsContrast(ground) {
   return hexContrast(ground, '#000000') >= hexContrast(ground, '#ffffff') ? 'darker' : 'lighter';
 }
 
-// The body a metal badge draws its arcs on is a gradient, not `palette.base`.
-// These are the middle stops of `METAL_STOPS` in the kit's patterns.js, which
-// that module does not export; they are the ground a contrast check should use
-// until it does. K1's material paint changes the stops and this mirror with it.
-const METAL_MIDDLE = { gold: '#d4a017', silver: '#b9c0cc', bronze: '#b3762f' };
-
-/** The colour a badge's arcs sit on: the metal's middle stop, else the base. */
+// The body a metal badge draws its arcs on is the material paint, not
+// `palette.base`: six stops from finish.js, the body colour at the half. Read
+// from the kit rather than mirrored, so a repainted metal cannot leave this
+// check measuring a colour nothing draws.
+/** The colour a badge's arcs sit on: the material's body stop, else the base. */
 export function groundHex(badge) {
-  return METAL_MIDDLE[badge.palette.metal] || badge.palette.base;
+  const stops = materialStops(badge.palette.metal);
+  return stops ? stops.find(([offset]) => offset === 0.5)[1] : badge.palette.base;
 }
 
 /* ── the shape probe ───────────────────────────────────────────────────────── */
 
 let probe = null;
 
+/** The hidden 0 by 0 `<svg>` every measurement runs in: a path for the silhouette, a text for the advance. */
+function ensureProbe() {
+  if (probe) return probe;
+  const svg = document.createElementNS(NS, 'svg');
+  for (const [name, value] of [['width', '0'], ['height', '0'], ['aria-hidden', 'true']]) svg.setAttribute(name, value);
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+  const path = document.createElementNS(NS, 'path');
+  const text = document.createElementNS(NS, 'text');
+  svg.append(path, text);
+  document.body.appendChild(svg);
+  probe = { svg, path, text };
+  return probe;
+}
+
 function probeFor(shapeId) {
   const shape = SHAPES[shapeId];
   if (!shape) return null;
-  if (!probe) {
-    const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('width', '0');
-    svg.setAttribute('height', '0');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
-    const path = document.createElementNS(NS, 'path');
-    svg.appendChild(path);
-    document.body.appendChild(svg);
-    probe = { svg, path };
-  }
-  probe.path.setAttribute('d', shape.d);
+  ensureProbe().path.setAttribute('d', shape.d);
   return probe;
 }
 
@@ -135,15 +136,12 @@ function inFill(target, x, y) {
   try {
     return target.path.isPointInFill(new DOMPoint(x, y));
   } catch {
-    // Older engines want an SVGPoint from the owning document.
-    try {
+    try { // Older engines want an SVGPoint from the owning document.
       const p = target.svg.createSVGPoint();
       p.x = x;
       p.y = y;
       return target.path.isPointInFill(p);
-    } catch {
-      return true; // Cannot measure: say nothing rather than cry wolf.
-    }
+    } catch { return true; } // Cannot measure: say nothing rather than cry wolf.
   }
 }
 
@@ -186,33 +184,44 @@ export function arcOutside(shapeId, side, fontSize, length) {
 /** The preview's `<text>` for one arc, or null when that arc is not drawn. */
 function arcText(root, side) {
   if (!root) return null;
-  const key = side === 'top' ? 'arctop' : 'arcbot';
-  const tp = Array.from(root.querySelectorAll('textPath')).find((t) => (t.getAttribute('href') || '').includes(key));
+  const tp = Array.from(root.querySelectorAll('textPath')).find((t) => (t.getAttribute('href') || '').includes(side === 'top' ? 'arctop' : 'arcbot'));
   return tp ? tp.parentNode : null;
 }
 
 /**
- * The drawn advance of each arc, read off the preview the renderer produced.
- * Returns `{ top, bottom }` in 512-field units, with 0 for an arc that is not
- * drawn. Falls back to an estimate when the engine will not measure.
+ * The natural advance of an arc's line: the preview's `<text>` copied onto the
+ * probe, where it sits on no path. On a `<textPath>` Chromium reports the whole
+ * line but Firefox and WebKit report only the run that fits, never more than the
+ * path, so a cut line measured there never looked cut (D2). The four attributes
+ * are the ones `drawArc` sets, so the copy resolves the face the preview did.
+ */
+function naturalAdvance(text) {
+  const copy = ensureProbe().text;
+  for (const name of ['font-family', 'font-size', 'font-weight', 'letter-spacing']) {
+    const value = text.getAttribute(name);
+    if (value === null) copy.removeAttribute(name); else copy.setAttribute(name, value);
+  }
+  copy.textContent = text.textContent;
+  let length = 0;
+  try { length = copy.getComputedTextLength(); } catch { length = 0; }
+  copy.textContent = '';
+  return length;
+}
+
+/**
+ * The advance of each arc's line, `{ top, bottom }` in 512-field units, with 0
+ * for an arc that has no text. Measured off the preview the renderer produced,
+ * modelled when the engine will not measure.
  */
 export function measureArcs(root, badge) {
   const out = { top: 0, bottom: 0 };
   for (const side of ['top', 'bottom']) {
+    const arc = badge?.arcs?.[side];
+    if (!arc || !arc.text) continue;
     const text = arcText(root, side);
-    if (!text) continue;
-    try {
-      out[side] = text.getComputedTextLength();
-    } catch {
-      out[side] = 0;
-    }
-  }
-  for (const side of ['top', 'bottom']) {
-    const arc = side === 'top' ? badge?.arcs?.top : badge?.arcs?.bottom;
-    if (out[side] || !arc || !arc.text) continue;
-    // 0.62 em is the middle of the six roles' average advance. Only reached
-    // when the engine refuses to measure, and only ever used to warn.
-    out[side] = arc.text.length * arc.size * 0.62 + arc.tracking * Math.max(0, arc.text.length - 1);
+    const length = text ? naturalAdvance(text) : 0;
+    // 0.62 em: the middle of the six roles' average advance. Only when nothing measures, only to warn.
+    out[side] = length > 0 ? length : arc.text.length * arc.size * 0.62 + arc.tracking * Math.max(0, arc.text.length - 1);
   }
   return out;
 }
@@ -221,13 +230,13 @@ export function measureArcs(root, badge) {
 
 /**
  * The part of an arc's words the engine draws when the line overruns its path,
- * or null when the whole line fits. `length` is the drawn advance; the path is
- * the renderer's own semicircle, read off the preview where the engine reports
- * it and modelled from the same formula where it does not.
- *
- * The survivor is read per glyph where the engine measures glyphs: a glyph off
- * the path has no extent. Where it does not, the middle of the line is kept in
- * proportion, which is what the three engines draw.
+ * or null when the whole line fits. `length` is the line's natural advance; the
+ * path is the renderer's own semicircle, read off the preview where the engine
+ * reports it and modelled from the same formula where it does not. The survivor
+ * is read per glyph where that is a read: Chromium gives a glyph off the path
+ * no extent, but Firefox gives every glyph one and WebKit counts fewer glyphs
+ * than the line has, so those keep the middle of the line in proportion, which
+ * is what all three engines draw.
  */
 export function arcCut(root, arc, side, length) {
   if (!arc || !arc.text || !(length > 0)) return null;
@@ -240,17 +249,15 @@ export function arcCut(root, arc, side, length) {
   } catch { /* the model stands */ }
   if (!(length > pathLength + 0.5)) return null;
 
-  const words = String(arc.text);
+  // The line as the engine addresses it: runs of spaces collapse and the ends are trimmed.
+  const words = String(arc.text).replace(/\s+/g, ' ').trim();
   let survivor = '';
   try {
-    const n = text.getNumberOfChars();
-    for (let i = 0; i < n; i++) {
-      if (text.getExtentOfChar(i).width > 0) survivor += words[i];
+    if (text.getNumberOfChars() === words.length) {
+      for (let i = 0; i < words.length; i++) if (text.getExtentOfChar(i).width > 0) survivor += words[i];
     }
-  } catch {
-    survivor = '';
-  }
-  if (!survivor.trim()) {
+  } catch { survivor = ''; }
+  if (!survivor.trim() || survivor.length === words.length) {
     const keep = Math.max(1, Math.floor(words.length * (pathLength / length)));
     const from = Math.floor((words.length - keep) / 2);
     survivor = words.slice(from, from + keep);
@@ -393,7 +400,7 @@ function textContrastWarnings(badge, target, where) {
 
 /** The strip's contrast for a badge, as the renderer composites it today. */
 export function stripRatio(badge) {
-  const plate = composite(badge.palette.ink, badge.palette.base, 0.86);
+  const plate = composite(badge.palette.ink, badge.palette.base, 0.92);
   const line = composite('#e7e9ff', hexOf(plate), 0.92);
   return contrast(line, plate);
 }
@@ -412,7 +419,14 @@ function stripWarning(badge) {
 
 /** The certificate band's worst slot: `{ slot, ratio, plate }`, the plate as hex. */
 export function bandWorst(cert) {
-  const plate = hexOf(composite(cert.palette.ink, cert.palette.base, 0.1));
+  // The paper grain (security.js) lies under the band's plate: at `strength` it
+  // moves the ground about strength times 128 levels, toward white on a dark
+  // base and toward the ink on a light one, before the plate's ten percent ink.
+  const grain = cert.background.grain || 0;
+  const ground = grain
+    ? hexOf(composite(isLightBase(cert.palette.base) ? cert.palette.ink : '#ffffff', cert.palette.base, grain * 0.5))
+    : cert.palette.base;
+  const plate = hexOf(composite(cert.palette.ink, ground, 0.1));
   return [['eyebrow', cert.text.eyebrow.color], ['body', cert.text.body.color]]
     .map(([slot, colour]) => ({ slot, ratio: hexContrast(colour, plate), plate }))
     .sort((a, b) => a.ratio - b.ratio)[0];
@@ -427,6 +441,22 @@ function bandWarning(cert) {
     body: `The band draws in the ${worst.slot} colour on a plate mixed from your base and your ink, `
       + `which puts them at ${worst.ratio.toFixed(1)} to 1. That band carries the origin, your handle `
       + 'and the verify address into the print, so it has to stay legible.',
+  };
+}
+
+/** The stamp and the seal on one spot. Both are round, so it is a distance test on the kit's own placement. */
+function stampWarning(cert) {
+  if (!cert.stamp.show || !cert.seal.design) return null;
+  const { cx, cy } = stampCentre(cert);
+  const sx = cert.seal.x * cert.size.w;
+  const sy = cert.seal.y * cert.size.h;
+  const gap = Math.hypot(cx - sx, cy - sy) - stampGeometry(cert.stamp.size).outer - cert.seal.size / 2;
+  if (gap >= 0) return null;
+  return {
+    kind: 'stamp-seal', level: 'warn', target: 'badge', overlap: Math.round(-gap),
+    title: 'The stamp sits on the seal',
+    body: `The two overlap by ${Math.round(-gap)} units, so one covers part of the other. `
+      + 'Move the stamp across or down, or the seal, until they clear. The band holds the stamp above itself, so a stamp pushed low stops there.',
   };
 }
 
@@ -462,6 +492,8 @@ export function warningsFor(design, root) {
     if (design.seal.design) out.push(...badgeWarnings(design.seal.design, root, 'seal', ' on the seal'));
     const band = bandWarning(design);
     if (band) out.push(band);
+    const stamp = stampWarning(design);
+    if (stamp) out.push(stamp);
   }
   return out;
 }

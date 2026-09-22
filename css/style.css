@@ -919,6 +919,7 @@ textarea.fld__input, .fld__area { padding: var(--space-2) var(--space-3); resize
   cursor: pointer;
 }
 .fld__hex { font-size: var(--text-xs); color: var(--text-muted); }
+.art__palette .fld__color { cursor: default; }
 
 .repeat { display: flex; flex-direction: column; gap: var(--space-2); }
 .repeat__row {

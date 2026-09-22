@@ -19,6 +19,15 @@
  * The stored value is a storage id, never a serving URL (C10.3): a URL goes
  * stale the moment the file is deleted and would bake a deployment hostname
  * into every saved design.
+ *
+ * The preview of a fresh attach is a `data:` URL, not a `blob:` one. The page's
+ * CSP (C13.3, frozen) lets `img-src` draw a `blob:` and lets `connect-src`
+ * fetch nothing of the kind, and the exporter's `inlineImages` fetches every
+ * `<image href>` that is not already `data:`. A `blob:` preview therefore drew
+ * and then broke every export until a reload swapped it for the storage URL
+ * (round 2 verification, D1). Reading the PNG back through a FileReader costs
+ * one pass over bytes already in memory and gives the preview, the thumbnail
+ * and the export the same string, which the exporter passes through untouched.
  */
 import { api, m, failText } from './api.js';
 import { paletteFrom, SAMPLE_SIDE } from './palette.js';
@@ -117,6 +126,16 @@ function toPng(img, plan) {
   });
 }
 
+/** The encoded PNG as a `data:` URL: what the preview draws and the exporter inlines without a fetch. */
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('The browser would not read the encoded image back.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** The 48 by 48 sample the palette is read from. Null when the canvas will not give it up. */
 function sampleSwatches(img, plan) {
   try {
@@ -164,10 +183,12 @@ export async function shrink(file) {
 }
 
 /**
- * What the last attach decoded, keyed by the preview URL it produced, so the
- * form can caption the thumbnail it shows and offer the palette read from it.
- * Session-only: after a reload the art is a remote URL again, the canvas would
- * be tainted by it, and there is nothing to report or offer.
+ * What the last attach decoded, keyed by the preview URL it produced (the
+ * `data:` string itself; equality on it is a string compare and the state
+ * holds one), so the form can caption the thumbnail it shows and offer the
+ * palette read from it. Session-only: after a reload the art is a remote URL
+ * again, the canvas would be tainted by it, and there is nothing to report or
+ * offer.
  */
 let lastArt = null;
 
@@ -218,19 +239,23 @@ export async function uploadArt(templateId, blob) {
 
 /**
  * Pick, rasterise, upload and attach. Returns a failure object rather than
- * throwing. On success the result carries `previewUrl` (a `blob:` URL of the
- * PNG that was sent) and `info`, and `artInfo(previewUrl)` answers for it.
+ * throwing. On success the result carries `previewUrl` (a `data:` URL of the
+ * PNG that was sent, see the note at the top) and `info`, and
+ * `artInfo(previewUrl)` answers for it. The read-back happens before the
+ * upload so a failure there leaves nothing attached on the server that the
+ * page cannot show.
  */
 export async function attachNewArt(templateId, file) {
   let pass;
+  let previewUrl;
   try {
     pass = await rasterise(file);
+    previewUrl = await blobToDataUrl(pass.blob);
   } catch (err) {
     return { ok: false, code: 'bad-image', message: err.message };
   }
   const result = await uploadArt(templateId, pass.blob);
   if (!result.ok) return { ...result, message: failText(result) };
-  const previewUrl = URL.createObjectURL(pass.blob);
   lastArt = { url: previewUrl, info: pass.info };
   return { ...result, previewUrl, info: pass.info };
 }

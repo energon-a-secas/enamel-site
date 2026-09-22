@@ -15,13 +15,11 @@
  * state: it shows or hides what the page already has.
  */
 import { presetGrid } from './render.js';
-import { state } from './state.js';
+import { state, STORAGE_KEY } from './state.js';
 import { $, param } from './utils.js';
 
 // The key `state.js` persists the draft under, read here only to ask whether
-// anything was ever saved. `state.js` does not export it; the name is also
-// recorded in CLAUDE.md under Data. Change one, change both.
-const DRAFT_KEY = 'enamel-studio-v1';
+// anything was ever saved.
 
 let active = false;
 
@@ -29,7 +27,7 @@ let active = false;
 export function firstVisit() {
   if (param('t')) return false;
   try {
-    return !localStorage.getItem(DRAFT_KEY);
+    return !localStorage.getItem(STORAGE_KEY);
   } catch {
     return true;
   }

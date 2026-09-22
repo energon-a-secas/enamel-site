@@ -91,7 +91,7 @@ function signaturesHtml(sigs) {
       data-path="signatures.${i}.name" data-cast="str" aria-label="Signature ${i + 1} name">
     <input class="fld__input fld__input--mini" value="${escHtml(s.role)}" placeholder="Role"
       data-path="signatures.${i}.role" data-cast="str" aria-label="Signature ${i + 1} role">
-    <select class="fld__input fld__input--mini" data-path="signatures.${i}.from" data-cast="str" title="From" aria-label="Signature ${i + 1} from">
+    <select class="fld__input fld__input--mini" data-path="signatures.${i}.from" data-cast="str" title="From" aria-label="Signature ${i + 1} handle">
       ${SIGNATURE_SOURCES.map((v) => opt(v, s.from || 'text', SIGNATURE_SOURCE_LABELS[v] || v)).join('')}
     </select>
     <button type="button" class="btn btn--ghost btn--sm" data-action="sig-remove" data-index="${i}" aria-label="Remove signature ${i + 1}">Remove</button>

@@ -10,7 +10,7 @@ import { normalizeDesign } from './insignia/schema.js';
 import { presetDesign, DEFAULT_PRESET } from './insignia/data/presets.js';
 import { clone } from './utils.js';
 
-const STORAGE_KEY = 'enamel-studio-v1';
+export const STORAGE_KEY = 'enamel-studio-v1';
 
 /** Template metadata, the half of a template that is not the design. */
 export function blankMeta() {
