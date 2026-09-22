@@ -51,7 +51,7 @@ it off, which is the point.
 - **A parametric editor, not a canvas** -- fifteen silhouettes, eight patterns,
   ring styles, metals, pips, arc text, a ribbon and a centre glyph or image, each
   one a field in a design document rather than a shape you drag.
-- **24 finished presets and a randomize control** -- twelve badges, twelve
+- **28 finished presets and a randomize control** -- sixteen badges, twelve
   certificates and ten font pairings. A pairing names a role, never a family.
 - **Versions that are frozen once written** -- publishing writes a version and
   every award pins the version it was issued from, so a later edit never changes

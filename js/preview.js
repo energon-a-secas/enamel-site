@@ -78,6 +78,19 @@ let fontsWatched = false;
 let lastWarnings = [];
 
 /**
+ * Hand a drawing's size to the stylesheet. The kit sets `width` and `height` to
+ * the field and the preview's CSS overrides both, so the attributes only need
+ * to stop pinning a size. They are set to 100% rather than removed because
+ * WebKit parses a removed length as "" and logs an error for each one, which
+ * was hundreds of lines a session (round 2, D6); every engine takes 100% quietly.
+ */
+function fluid(svg) {
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  return svg;
+}
+
+/**
  * Draw the design into `host` and list its warnings in `warnHost`.
  *
  * The warnings are computed after the node is in the document, because the arc
@@ -107,8 +120,7 @@ export function paintPreview(host, warnHost) {
     return;
   }
 
-  svg.removeAttribute('width');
-  svg.removeAttribute('height');
+  fluid(svg);
   svg.setAttribute('class', 'preview-svg');
   host.replaceChildren(svg);
 
@@ -210,9 +222,7 @@ function certificateContext(d, prov) {
   const award = previewAward(d, prov);
   const box = document.createElement('div');
   box.className = 'context-sheet';
-  const svg = renderSvg(d, prov);
-  svg.removeAttribute('width');
-  svg.removeAttribute('height');
+  const svg = fluid(renderSvg(d, prov));
   svg.setAttribute('class', 'context-sheet__svg');
   svg.style.width = d.orientation === 'portrait' ? '210mm' : '297mm';
   box.appendChild(svg);

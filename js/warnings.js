@@ -44,7 +44,8 @@ export const ARC_SAMPLES = 42;
  * silence. WCAG AA for normal text is 4.5:1 and for large text 3:1, and these
  * lines sit between the two definitions: 20 units on a 512 badge is large,
  * 26 units on a 1684 certificate is not. So under 3:1 is a warning, and between
- * 3:1 and 4.5:1 is worth a look. The twelve badge presets run 13.8:1 to 16.8:1;
+ * 3:1 and 4.5:1 is worth a look. The first twelve badge presets run 13.8:1 to
+ * 16.8:1 and the four added in round 2 clear 4.5:1 (judged 2026-09-22);
  * the one certificate in the middle band is the light-ground one, 4.4:1, by design.
  */
 export const MIN_STRIP_CONTRAST = 4.5;

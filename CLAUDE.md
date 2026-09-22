@@ -19,41 +19,52 @@ Then open http://localhost:8885. It must be served over HTTP, because the app is
 
 | Module | Lines | Owns |
 |---|---:|---|
-| `js/insignia/schema.js` | 500 | `SCHEMA_VERSION`, `KINDS`, `ORIGINS`, `CATEGORIES`, `SPHERES` |
-| `js/insignia/render.js` | 499 | `setArtUrls`, `artUrl`, `nextId`, `familyFor`, `renderSvg` |
-| `js/insignia/certificate.js` | 498 | `formatDate`, `layoutText`, `certificateRuns`, `drawCertificate`, `qrMatrix` |
-| `js/insignia/export.js` | 453 | `FAMILY_SUBSETS`, `familyCovers`, `partitionChars`, `fieldLabel`, `fallbackRuns` |
-| `js/studio.js` | 485 | `start`, `onSession` |
-| `js/warnings.js` | 493 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside`, `arcCut`, `stripRatio`, `bandWorst`, `warningsFor` |
+| `js/warnings.js` | 499 | `ARC_SAMPLES`, `MIN_STRIP_CONTRAST`, `BAD_STRIP_CONTRAST`, `contrast`, `arcOutside`, `arcCut`, `stripRatio`, `bandWorst`, `warningsFor` |
+| `js/studio.js` | 487 | `start`, `onSession` |
 | `js/editor.js` | 478 | `renderEditor`, `applyPairing`, `initEditor` |
-| `js/neorgon-footer.js` | 420 | none |
-| `js/insignia/wallet.js` | 369 | `isImported`, `provenanceOf`, `renderAwardCard`, `renderAwardGrid`, `buildProfileSvg` |
-| `js/insignia/openbadges.js` | 306 | `OB3_KEYWORD`, `OB2_KEYWORD`, `OB3_NS`, `OB2_NS`, `crc32` |
-| `js/insignia/patterns.js` | 271 | `SVG_NS`, `svgEl`, `n`, `CONTROL_RE`, `hasControl` |
-| `js/neorgon-beacon.js` | 262 | none |
-| `js/insignia/data/certificates.js` | 260 | `CERTIFICATE_PRESETS` |
-| `js/insignia/data/badges.js` | 258 | `badge`, `BADGE_PRESETS` |
+| `js/insignia/schema.js` | 462 | `SCHEMA_VERSION`, `FONT_FAMILIES`, `HEX_RE`, `HANDLE_RE`, `CERT_ASPECT` |
+| `js/insignia/export.js` | 459 | `FAMILY_SUBSETS`, `familyCovers`, `partitionChars`, `fieldLabel`, `fallbackRuns` |
+| `js/neorgon-footer.js` | 435 | none |
+| `js/insignia/patterns.js` | 422 | `SVG_NS`, `svgEl`, `n`, `CONTROL_RE`, `hasControl` |
+| `js/insignia/security.js` | 383 | `isLightBase`, `innerEdge`, `GRAIN`, `LATENT_OPACITY`, `LATENT_SIZE` |
+| `js/insignia/wallet.js` | 374 | `isImported`, `provenanceOf`, `renderAwardCard`, `renderAwardGrid`, `buildProfileSvg` |
+| `js/insignia/data/badges.js` | 372 | `badge`, `BADGE_PRESETS` |
+| `js/insignia/render.js` | 359 | `renderSvg`, `textRuns`, `usedFonts`, `ensureFonts`, `SCHEMA_VERSION` |
+| `js/neorgon-beacon.js` | 357 | none |
+| `js/insignia/cert-band.js` | 321 | `drawFrame`, `bandGeometry`, `recordBlock`, `bandRuns`, `drawBand` |
 | `js/fields.js` | 315 | `ROLE_LABELS`, `CATEGORY_LABELS`, `ACCESS_LABELS`, `VALIDITY_CHOICES`, `hasArt`, `metaGroup`, `groupsFor` |
-| `js/preview.js` | 273 | `previewProvenance`, `draftProvenance`, `paintPreview`, `fixAt`, `paintContext`, `setLoupe`, `startFonts` |
-| `js/art.js` | 241 | `MAX_ART_BYTES`, `pickImage`, `rasterise`, `artInfo`, `artCaption`, `uploadArt`, `attachNewArt` |
-| `js/fixes.js` | 227 | `stepLightness`, `stepToContrast`, `darkenInk`, `ribbonWords`, `fixesFor`, `withFixes`, `applyFix` |
+| `js/insignia/openbadges.js` | 306 | `OB3_KEYWORD`, `OB2_KEYWORD`, `OB3_NS`, `OB2_NS`, `crc32` |
+| `js/insignia/certificate.js` | 295 | `fitScript`, `verifyHost`, `layoutText`, `certificateRuns`, `drawCertificate` |
+| `js/preview.js` | 283 | `previewProvenance`, `draftProvenance`, `paintPreview`, `fixAt`, `paintContext`, `setLoupe`, `startFonts` |
+| `js/insignia/data/certificates.js` | 280 | `CERTIFICATE_PRESETS` |
+| `js/art.js` | 266 | `MAX_ART_BYTES`, `pickImage`, `rasterise`, `artInfo`, `artCaption`, `uploadArt`, `attachNewArt` |
+| `js/insignia/qr.js` | 252 | `qrMatrix`, `qrNode` |
 | `js/links.js` | 238 | `start`, `onSession` |
+| `js/fixes.js` | 227 | `stepLightness`, `stepToContrast`, `darkenInk`, `ribbonWords`, `fixesFor`, `withFixes`, `applyFix` |
+| `js/insignia/centre.js` | 214 | `SHAPE_SPAN`, `maskOutline`, `toneFilter`, `drawCentre` |
 | `js/utils.js` | 181 | `$`, `showToast`, `clone`, `getPath`, `setPath` |
+| `js/insignia/finish.js` | 177 | `materialStops`, `silhouetteClip`, `drawBody`, `drawFinish`, `polygonVertices` |
+| `js/insignia/glyphs.js` | 175 | `GLYPH_FIELD`, `GLYPHS`, `GLYPH_LIST`, `REQUIRED_ATTRS`, `glyphProblems` |
 | `js/state.js` | 167 | `blankMeta`, `state`, `design`, `setDesign`, `loadSaved` |
+| `js/insignia/rings.js` | 159 | `ringScale`, `about`, `bodyPath`, `mix`, `stopNodes` |
 | `js/neorgon-dom.js` | 156 | `escHtml`, `debounce`, `throttle`, `clamp`, `uid` |
+| `js/insignia/provenance.js` | 153 | `PUBLIC_ID_RE`, `ISO_UTC_RE`, `validateProvenance`, `formatDate`, `ORIGIN_WORDS` |
+| `js/insignia/shapes.js` | 143 | `SHAPE_VIEWBOX`, `SHAPE_FIELD`, `SHAPES`, `SHAPE_LIST`, `shapePath` |
+| `js/insignia/strip.js` | 141 | `STRIP_INNER`, `STRIP_PLATE`, `MONO_ADV`, `fitMono`, `fitSans` |
 | `js/render.js` | 139 | `STATUS_LABEL`, `KIND_LABEL`, `thumb`, `presetGrid`, `emptyState` |
-| `js/insignia/shapes.js` | 138 | `SHAPE_VIEWBOX`, `SHAPE_FIELD`, `SHAPES`, `SHAPE_LIST`, `shapePath` |
 | `js/palette.js` | 137 | `FALLBACK_INK`, `paletteFrom`, `applyPalette` (LOGO-05, never automatic) |
-| `js/insignia/data/presets.js` | 125 | `PRESETS`, `DEFAULT_PRESET`, `presetsFor`, `preset`, `presetDesign` |
+| `js/insignia/data/presets.js` | 128 | `PRESETS`, `DEFAULT_PRESET`, `presetsFor`, `preset`, `presetDesign` |
+| `js/insignia/patterns-dense.js` | 125 | `DENSE_FIELD`, `DENSE_STROKE`, `SEGMENTS_PER_LOBE`, `DENSE_LAYERS`, `MIN_LOBES` |
 | `js/library.js` | 122 | `start`, `onSession` |
 | `js/insignia/data/fonts.js` | 120 | `PAIRING_SLOTS`, `PAIRINGS`, `PAIRING_LIST`, `pairing`, `badgeFonts` |
-| `js/insignia/glyphs.js` | 111 | `GLYPH_FIELD`, `GLYPHS`, `GLYPH_LIST`, `glyphNode` |
+| `js/insignia/draw.js` | 120 | `F`, `CX`, `R`, `ARC_MARGIN`, `BOTTOM_ARC_R` |
 | `js/catalogue.js` | 102 | `startCatalogue` |
 | `js/frame.js` | 99 | `framed` |
-| `js/empty-state.js` | 94 | `firstVisit`, `isEmpty`, `showEmptyState`, `refreshEmptyState`, `leaveEmptyState`, `focusWords` |
 | `js/events.js` | 95 | `openModal`, `closeModal`, `bindEvents` |
+| `js/empty-state.js` | 92 | `firstVisit`, `isEmpty`, `showEmptyState`, `refreshEmptyState`, `leaveEmptyState`, `focusWords` |
 | `js/api.js` | 84 | `isAuthError`, `q`, `m`, `failText` |
 | `js/auth.js` | 81 | `initAuth` |
+| `js/insignia/enums.js` | 74 | `KINDS`, `ORIGINS`, `CATEGORIES`, `SPHERES`, `ACCESS_LEVELS` |
 | `js/exporting.js` | 55 | `previewStem`, `bindExport` |
 | `js/app.js` | 43 | none |
 | `js/convex.js` | 29 | `convex`, `api` |
@@ -216,7 +227,7 @@ scrolling the page.
 **The two authoring warnings are graded, not binary.** `js/warnings.js` measures
 arc text against the silhouette with `isPointInFill` over 42 sample points, the
 same technique and the same count the catalogue was designed with, and it grades
-contrast at 3:1 and 4.5:1 rather than one threshold. All twelve badge presets and
+contrast at 3:1 and 4.5:1 rather than one threshold. All sixteen badge presets and
 eleven of the twelve certificate presets are silent; `graphite` draws a note at
 4.4:1, which is a deliberate light-ground design rather than a mistake. A warning
 that fires on a shipped preset teaches an author to ignore warnings.

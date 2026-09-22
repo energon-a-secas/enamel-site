@@ -4,8 +4,9 @@
  * The studio's own path is preset, then words, then publish, but a first visit
  * used to open on the default badge with fifty controls on the right and
  * Presets one of six same-weight buttons in the stage head. A visitor who does
- * not know twenty-four finished designs exist starts editing the default. So
- * on a first visit the stage shows the twelve presets of the current kind as
+ * not know twenty-eight finished designs exist starts editing the default. So
+ * on a first visit the stage shows the presets of the current kind (sixteen
+ * badges, twelve certificates) as
  * pictures, and choosing one paints it, opens Words and puts the cursor in the
  * first words field. A returning visitor lands on their draft as before; the
  * Presets button stays for later.
