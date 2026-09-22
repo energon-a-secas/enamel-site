@@ -11,7 +11,9 @@
 import { api, m, q, failText } from './api.js';
 import { state, design, setDesign, loadSaved, save, adoptTemplate, resetDraft } from './state.js';
 import { initEditor, renderEditor, applyPairing } from './editor.js';
-import { paintPreview, startFonts } from './preview.js';
+import { paintPreview, paintContext, fixAt, setLoupe, startFonts } from './preview.js';
+import { applyFix } from './fixes.js';
+import { firstVisit, isEmpty, showEmptyState, refreshEmptyState, leaveEmptyState, focusWords } from './empty-state.js';
 import { bindExport } from './exporting.js';
 import { presetGrid } from './render.js';
 import { openModal, closeModal } from './events.js';
@@ -25,14 +27,26 @@ import { $, param, showToast } from './utils.js';
 let editorRoot = null;
 let previewHost = null;
 let warnHost = null;
+let contextHost = null;
+let stageEl = null;
 
 // The lede of the kit's dialog when this page asks for a sign-in, and the one
 // sentence next to the disabled controls that says the same thing.
 const SIGN_IN_REASON = 'Sign in to save this design to Sash and publish it.';
 const ART_REASON = 'Sign in to upload an image.';
 
-const repaint = debounce(() => {
+/** The preview, its warnings, and the row under it, in one pass. */
+function paintAll() {
   paintPreview(previewHost, warnHost);
+  paintContext(contextHost);
+}
+
+// Any write while the picker is up means the author has started on the design
+// under it, so the picker gives way to the preview. A kind switch is the one
+// change that is not a write, and `setKind` never reaches this.
+const repaint = debounce(() => {
+  leaveEmptyState();
+  paintAll();
   save();
   paintSaveState();
 }, 90);
@@ -263,13 +277,24 @@ function openPresets() {
   openModal('presetModal');
 }
 
-function applyPreset(id) {
+/**
+ * Paint a preset. From the stage's picker (U1) the preview replaces the picker
+ * at once and the cursor lands in the first words field, because the words are
+ * the one thing a preset leaves to the author; from the modal it closes as before.
+ */
+function applyPreset(id, fromStage = false) {
   setDesign(presetDesign(id));
   state.presetId = id;
   applyPairing(design(), state.pairingId);
   renderEditor(editorRoot);
+  if (fromStage) {
+    leaveEmptyState();
+    paintAll();
+    focusWords(editorRoot);
+  } else {
+    closeModal('presetModal');
+  }
   repaint();
-  closeModal('presetModal');
   showToast('Preset applied. The words are yours to change.');
 }
 
@@ -283,10 +308,11 @@ function onRandomize() {
 }
 
 /**
- * Forget the local draft and start from the default preset. Behind a confirm,
- * because it is the one control on the page that throws work away; what it
- * throws away is only what this browser holds. A template saved to Sash keeps
- * its rows, and the studio simply stops pointing at it.
+ * Forget the local draft and put the picker back on the stage, over the default
+ * preset. Behind a confirm, because it is the one control on the page that
+ * throws work away; what it throws away is only what this browser holds. A
+ * template saved to Sash keeps its rows, and the studio simply stops pointing
+ * at it.
  */
 function onStartOver() {
   const sure = window.confirm('Start over? This forgets the design and the template details held in this browser. Anything already saved to Sash stays there.');
@@ -295,9 +321,38 @@ function onStartOver() {
   pointUrlAt(null);
   paintKind();
   renderEditor(editorRoot);
-  paintPreview(previewHost, warnHost);
+  paintAll();
   paintSaveState();
-  showToast('Started over. Anything saved to Sash is still there.');
+  showEmptyState();
+  showToast('Started over. Pick a preset to begin again; anything saved to Sash is still there.');
+}
+
+/** The one toggle on the stage that draws the preview at 2x. Presentation only. */
+function onLoupe(event) {
+  const button = event.currentTarget;
+  const on = button.getAttribute('aria-pressed') !== 'true';
+  setLoupe(stageEl, on);
+  button.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+
+/**
+ * A warning's own button (U3). The fix is applied through `fixes.js`, then the
+ * form and the preview are rebuilt the way any control's write rebuilds them,
+ * so the warnings re-measure and a fix that did not clear one stays visible.
+ * Focus moves to the next fix, or to the list, because the button that was
+ * clicked has just been redrawn out from under the pointer.
+ */
+function onFix(event) {
+  const button = event.target.closest('[data-fix]');
+  if (!button || !warnHost.contains(button)) return;
+  const fix = fixAt(button.dataset.fix);
+  if (!fix || !applyFix(fix)) return;
+  renderEditor(editorRoot);
+  paintAll();
+  save();
+  paintSaveState();
+  const next = warnHost.querySelector('.warn__fix') || warnHost;
+  next.focus({ preventScroll: true });
 }
 
 function setKind(kind) {
@@ -316,6 +371,9 @@ function setKind(kind) {
   state.kind = kind;
   paintKind();
   renderEditor(editorRoot);
+  // While the picker is up, a kind switch shows the other kind's presets and
+  // saves nothing: a visitor who has chosen nothing yet still has a first visit.
+  if (isEmpty()) { refreshEmptyState(); return; }
   repaint();
 }
 
@@ -354,7 +412,8 @@ async function loadTemplate(publicId) {
   if (state.artRef && detail.artUrl) state.artUrl = detail.artUrl;
   paintKind();
   renderEditor(editorRoot);
-  paintPreview(previewHost, warnHost);
+  leaveEmptyState();
+  paintAll();
   paintSaveState();
 }
 
@@ -364,13 +423,21 @@ export async function start() {
   editorRoot = $('editorRoot');
   previewHost = $('preview');
   warnHost = $('warnings');
+  contextHost = $('previewContext');
+  stageEl = $('previewStage');
+  // Asked before the draft is read, since reading it is how a visit stops
+  // being a first one.
+  const fresh = firstVisit();
   loadSaved();
   startFonts();
 
   initEditor(editorRoot, repaint, onArt);
   renderEditor(editorRoot);
-  paintPreview(previewHost, warnHost);
+  paintAll();
   paintSaveState();
+  // U1. Nothing chosen yet: the stage is the picker, and the default design
+  // under it is painted so that any write shows it at once.
+  if (fresh) showEmptyState();
 
   paintKind();
   for (const button of document.querySelectorAll('[data-kind]')) {
@@ -379,6 +446,12 @@ export async function start() {
   $('presetBtn')?.addEventListener('click', openPresets);
   $('randomBtn')?.addEventListener('click', onRandomize);
   $('resetBtn')?.addEventListener('click', onStartOver);
+  $('loupeBtn')?.addEventListener('click', onLoupe);
+  warnHost?.addEventListener('click', onFix);
+  $('stageGrid')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-preset]');
+    if (button) applyPreset(button.dataset.preset, true);
+  });
   bindExport();
   $('saveDraftBtn')?.addEventListener('click', onSaveDraft);
   $('publishBtn')?.addEventListener('click', openPublish);

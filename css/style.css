@@ -588,9 +588,27 @@ button:active,
   align-items: start;
 }
 
+/* A grid item's minimum is its content unless told otherwise, and two things
+   on the stage are wider than a phone by design: the loupe's 2x drawing and
+   the A4 sheet at print size. Each scrolls in its own box; the column must
+   not grow to fit them, or the whole page scrolls sideways instead. */
+.studio__stage,
+.studio__panel { min-width: 0; }
+
 @media (min-width: 1000px) {
   .studio { grid-template-columns: minmax(0, 1fr) minmax(380px, 460px); }
-  .studio__stage { position: sticky; top: 72px; }
+  /* Sticky, and its own scroll container when it is taller than the window:
+     with the context row under the preview the stage runs past 900px, and a
+     stuck element taller than the viewport keeps its foot (the warnings, the
+     sheet) out of reach until the whole editor has scrolled by. */
+  .studio__stage {
+    position: sticky;
+    top: 72px;
+    max-height: calc(100vh - 72px - var(--space-4));
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-bottom: var(--space-2);
+  }
 }
 
 .stage-head {
@@ -614,6 +632,88 @@ button:active,
 
 .preview-frame { width: 100%; display: grid; place-items: center; }
 .preview-svg { width: 100%; max-width: 520px; height: auto; display: block; }
+
+/* ── U1: the picker as the empty state ─────────────────────── */
+
+.preview-stage.is-empty { place-items: stretch; }
+.stage-empty { width: 100%; }
+.stage-empty__lede {
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-4);
+}
+/* Three up at every width: twelve pictures in four rows, the name under each.
+   The note a preset carries stays in the modal, where there is room for it. */
+/* Compound, because the base .preset-grid rule sits later in this file and
+   would otherwise win at equal specificity and fold this to one column on a
+   phone (the modal's auto-fill at 180px). */
+.preset-grid.preset-grid--stage {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: 0;
+}
+.preset-grid--stage .preset { padding: var(--space-2); gap: var(--space-1); min-width: 0; }
+.preset-grid--stage .thumb { width: 100%; max-width: var(--thumb-size, 132px); }
+.preset-grid--stage .preset__note { display: none; }
+@media (max-width: 600px) {
+  .preview-stage.is-empty { padding: var(--space-3); }
+  .preset-grid.preset-grid--stage { gap: var(--space-2); }
+  .preset-grid--stage .preset__name { font-size: var(--text-xs); }
+}
+
+/* ── The loupe: the preview at 2x in a scroll box ──────────── */
+
+.preview-stage.is-loupe { display: block; padding: 0; }
+.preview-stage.is-loupe .preview-frame {
+  display: block;
+  overflow: auto;
+  max-height: min(70vh, 640px);
+  padding: var(--space-4);
+  overscroll-behavior: contain;
+}
+.preview-stage.is-loupe .preview-svg { width: var(--loupe-width, 1040px); max-width: none; }
+
+/* ── U6: where it will live ─────────────────────────────────── */
+
+.preview-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
+  margin-top: var(--space-4);
+}
+.preview-context:empty { display: none; }
+.context-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+  min-width: 0;
+}
+.context-item__label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* The kit's card is as wide as its art plus its own padding token; the figure
+   takes that width so the label under it lines up with the card's edge. */
+.context-item--card { width: calc(var(--ins-card-size, 180px) + 2 * var(--space-3) + 2px); max-width: 100%; }
+.context-item--card .ins-card { width: 100%; }
+.context-item--sheet { flex: 1 1 100%; }
+.context-sheet {
+  width: 100%;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  overscroll-behavior: contain;
+}
+.context-sheet__svg { display: block; height: auto; max-width: none; }
+.context-bare { display: block; }
 
 .preview-parody {
   color: var(--text-secondary);
@@ -659,6 +759,18 @@ button:active,
   padding-top: 2px;
   min-width: 5.5em;
 }
+
+/* U3. The button that does what the warning's prose asks for. The list sits
+   straight under the preview, so it takes the gap the preview's note had. */
+.warn-list:empty { display: none; }
+.warn__body { flex: 1; min-width: 0; }
+.warn__fixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.warn-list:focus { outline: none; }
 
 /* ── Save bar and notices ──────────────────────────────────── */
 

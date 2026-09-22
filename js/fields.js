@@ -14,6 +14,8 @@
 import {
   SHAPE_IDS, METALS, PATTERN_KINDS, PIP_STYLES, FONT_ROLES,
   CERT_BACKGROUNDS, CERT_FRAMES, CATEGORIES, SPHERES, ACCESS_LEVELS, ORIENTATIONS,
+  FINISH_KINDS, CENTRE_STYLES, CENTRE_FITS, CENTRE_MASKS, CENTRE_PLATES, CENTRE_TONES,
+  CERT_LATENTS, SIGNATURE_SOURCES, SERIAL_STYLES,
 } from './insignia/schema.js';
 import { GLYPH_LIST } from './insignia/glyphs.js';
 import { PAIRINGS } from './insignia/data/fonts.js';
@@ -42,7 +44,21 @@ export const VALIDITY_CHOICES = [
   ['63072000000', 'Two years'],
 ];
 
+// Round 2 (4.1). Each list is a C7 enum in its stored order, so the first
+// option is the default, and the label says what the eye gets rather than
+// what the renderer does.
+export const FINISH_LABELS = { none: 'None', bevel: 'Bevel rim', gloss: 'Gloss dome', facet: 'Facets' };
+export const CENTRE_STYLE_LABELS = { line: 'Line', bold: 'Bold', emboss: 'Emboss', duotone: 'Duotone' };
+export const CENTRE_FIT_LABELS = { cover: 'Fill the frame', contain: 'Fit inside' };
+export const CENTRE_MASK_LABELS = { circle: 'Circle', rounded: 'Rounded square', shape: "The badge's own shape", none: 'None' };
+export const CENTRE_PLATE_LABELS = { none: 'None', solid: 'Solid', metal: 'Metal' };
+export const CENTRE_TONE_LABELS = { full: 'Full colour', mono: 'One colour', duotone: 'Two colours' };
+export const LATENT_LABELS = { none: 'None', parody: 'PARODY', serial: 'The serial' };
+export const SIGNATURE_SOURCE_LABELS = { text: 'Typed name', issuer: 'The issuing handle', holder: "The holder's handle" };
+export const SERIAL_STYLE_LABELS = { quiet: 'Quiet', loud: 'Record block' };
+
 const roles = () => FONT_ROLES.map((r) => [r, ROLE_LABELS[r]]);
+const labelled = (list, labels) => list.map((id) => [id, labels[id] || id]);
 
 // The deployment's caps on the two list fields (convex/templates.ts checkMeta:
 // 20 skills of 40 characters, 200 handles; convex/lib/handles.ts HANDLE_RE:
@@ -96,12 +112,19 @@ function badgeGroups(d) {
         f('palette.base', 'Base', 'color'),
         f('palette.accent', 'Accent', 'color'),
         f('palette.ink', 'Ink', 'color', { hint: 'The provenance strip is drawn on this, with light text. A light ink makes it hard to read.' }),
-        f('palette.metal', 'Metal', 'select', { options: METALS, hint: 'A metal replaces the base with a three-stop gradient.' }),
+        f('palette.metal', 'Metal', 'select', { options: METALS, hint: 'A metal replaces the base with a layered material paint.' }),
+        f('finish.kind', 'Finish', 'select', { options: labelled(FINISH_KINDS, FINISH_LABELS),
+          hint: 'A bevel and facets sit under the rings; a gloss dome sits over everything but the strip. Facets draw only on a straight-edged silhouette.' }),
+        ...(d.finish.kind === 'none' ? [] : [
+          f('finish.strength', 'Finish strength', 'range', { min: 0, max: 1, step: 0.01 }),
+        ]),
         f('pattern.kind', 'Pattern', 'select', { options: PATTERN_KINDS }),
         ...(d.pattern.kind === 'none' ? [] : [
           f('pattern.color', 'Pattern colour', 'color'),
           f('pattern.opacity', 'Pattern strength', 'range', { min: 0, max: 1, step: 0.01 }),
           f('pattern.scale', 'Pattern scale', 'range', { min: 0.25, max: 4, step: 0.05 }),
+          f('pattern.fade', 'Pattern fade', 'range', { min: 0, max: 1, step: 0.01,
+            hint: 'Fades the pattern toward the middle so the glyph sits on clear ground.' }),
         ]),
         f('rings', 'Rings', 'rings'),
         f('pips.count', 'Pips lit', 'range', { min: 0, max: 10, step: 1 }),
@@ -118,10 +141,25 @@ function badgeGroups(d) {
         ...(d.centre.kind === 'glyph' ? [
           f('centre.glyph', 'Glyph', 'select', { options: GLYPH_LIST }),
           f('centre.color', 'Glyph colour', 'color'),
+          f('centre.style', 'Glyph style', 'select', { options: labelled(CENTRE_STYLES, CENTRE_STYLE_LABELS) }),
         ] : []),
-        ...(d.centre.kind === 'image' ? [f('centre.imageRef', 'Image', 'art')] : []),
+        ...(d.centre.kind === 'image' ? [
+          f('centre.imageRef', 'Image', 'art'),
+          f('centre.fit', 'Fit', 'select', { options: labelled(CENTRE_FITS, CENTRE_FIT_LABELS) }),
+          f('centre.mask', 'Mask', 'select', { options: labelled(CENTRE_MASKS, CENTRE_MASK_LABELS) }),
+          f('centre.tone', 'Tone', 'select', { options: labelled(CENTRE_TONES, CENTRE_TONE_LABELS),
+            hint: 'One colour tints the image with the tint below. Two colours map its dark areas to the ink and its light areas to the light tone.' }),
+          ...(d.centre.tone === 'mono' ? [f('centre.color', 'Tint', 'color')] : []),
+          ...(d.centre.tone === 'duotone' ? [f('centre.toneColor', 'Light tone', 'color')] : []),
+        ] : []),
         ...(d.centre.kind === 'none' ? [] : [
+          f('centre.plate', 'Plate', 'select', { options: labelled(CENTRE_PLATES, CENTRE_PLATE_LABELS),
+            hint: 'A plate is the mask outline drawn a little larger under the mark, so a transparent mark sits on a consistent field.' }),
+          ...(d.centre.plate === 'solid' ? [f('centre.plateColor', 'Plate colour', 'color')] : []),
           f('centre.scale', 'Size', 'range', { min: 0.2, max: 2, step: 0.05 }),
+          f('centre.rotation', 'Rotation', 'range', { min: -180, max: 180, step: 1 }),
+          f('centre.opacity', 'Opacity', 'range', { min: 0, max: 1, step: 0.01 }),
+          f('centre.dx', 'Nudge sideways', 'range', { min: -128, max: 128, step: 1 }),
           f('centre.dy', 'Nudge up or down', 'range', { min: -128, max: 128, step: 1 }),
         ]),
       ],
@@ -156,13 +194,32 @@ function certificateGroups(d) {
           f('background.color', 'Background colour', 'color'),
           f('background.opacity', 'Background strength', 'range', { min: 0, max: 1, step: 0.01 }),
           f('background.scale', 'Background scale', 'range', { min: 0.25, max: 4, step: 0.05 }),
+          f('background.fade', 'Background fade', 'range', { min: 0, max: 1, step: 0.01,
+            hint: 'Fades the pattern toward the middle of the page so the words sit on clear ground.' }),
         ]),
+        f('background.grain', 'Paper grain', 'range', { min: 0, max: 0.2, step: 0.005,
+          hint: 'A fine noise over the whole page, ink-coloured on a light ground and white on a dark one.' }),
+        f('background.latent', 'Latent mark', 'select', { options: labelled(CERT_LATENTS, LATENT_LABELS),
+          hint: 'A four percent tone in the paper. Fixed strength, so it stays subtle.' }),
         f('frame.style', 'Frame', 'select', { options: CERT_FRAMES }),
         ...(d.frame.style === 'none' ? [] : [
           f('frame.width', 'Frame weight', 'range', { min: 1, max: 64, step: 1 }),
           f('frame.color', 'Frame colour', 'color'),
           f('frame.inset', 'Frame inset', 'range', { min: 0, max: 200, step: 1 }),
+          f('frame.microtext', 'Microtext', 'check',
+            { hint: 'The origin, the handle and the verify address, repeated around the frame at hairline size. Use the loupe to see it.' }),
         ]),
+      ],
+    },
+    {
+      id: 'stamp', title: 'Stamp', open: false, fields: [
+        f('stamp.show', 'Show the stamp', 'check',
+          { hint: "Dated with the issue date, in the issuing handle's name. Nothing on it is yours to write." }),
+        ...(d.stamp.show ? [
+          f('stamp.x', 'Across', 'range', { min: 0, max: 1, step: 0.01 }),
+          f('stamp.y', 'Down', 'range', { min: 0, max: 1, step: 0.01 }),
+          f('stamp.size', 'Stamp size', 'range', { min: 100, max: 300, step: 5 }),
+        ] : []),
       ],
     },
     {
@@ -178,6 +235,8 @@ function certificateGroups(d) {
     {
       id: 'foot', title: 'Signatures and the foot', open: false, fields: [
         f('signatures', 'Signatures', 'signatures'),
+        f('serial.style', 'Serial style', 'select', { options: labelled(SERIAL_STYLES, SERIAL_STYLE_LABELS),
+          hint: 'The record block draws the serial large, the QR in a crop-mark frame, and the dates in a small table.' }),
         f('serial.font', 'Serial face', 'select', { options: roles() }),
         f('serial.size', 'Serial size', 'range', { min: 8, max: 64, step: 1 }),
         f('serial.color', 'Serial colour', 'color'),
@@ -193,8 +252,14 @@ function certificateGroups(d) {
   ];
 }
 
+/** The design carries an uploaded image, on the badge or on a certificate's seal. */
+export function hasArt(design) {
+  const seal = design && design.seal && design.seal.design;
+  return !!(design && design.centre && design.centre.imageRef) || !!(seal && seal.centre && seal.centre.imageRef);
+}
+
 /** The template metadata group, the half of a template that is not the design. */
-export function metaGroup(meta) {
+export function metaGroup(meta, design = null) {
   return {
     id: 'details', title: 'Template details', open: true, fields: [
       f('meta.name', 'Name', 'text', { maxlength: 80, hint: 'Screened against a list of real issuers when you publish.' }),
@@ -208,7 +273,12 @@ export function metaGroup(meta) {
       ...(meta.category === 'recognition' ? [f('meta.sphere', 'Sphere', 'select', { options: SPHERES })] : []),
       f('meta.access', 'Access', 'select', { options: ACCESS_LEVELS.map((a) => [a, ACCESS_LABELS[a]]), rerender: true }),
       ...(meta.access === 'limited' ? [f('meta.seats', 'Seats', 'number', { min: 1, step: 1 })] : []),
-      ...(meta.access === 'private' ? [{
+      // C10.3's duty, next to the Access selector: an attached image is served
+      // to anyone holding its address whatever the template's access says.
+      ...(hasArt(design) ? [{
+        path: 'meta.access', label: '', type: 'note',
+        body: "An uploaded image is reachable by anyone who has ever been handed its address, whatever the template's access.",
+      }] : meta.access === 'private' ? [{
         path: 'meta.access', label: '', type: 'note',
         body: 'An uploaded image is not private, even on a private template: anyone with its address can open it. Removing the image is the only way to withdraw it.',
       }] : []),
@@ -235,5 +305,5 @@ export function pairingNote(id) {
 /** Every group for a design, metadata last. */
 export function groupsFor(design, meta) {
   const base = design.kind === 'certificate' ? certificateGroups(design) : badgeGroups(design);
-  return [...base, metaGroup(meta)];
+  return [...base, metaGroup(meta, design)];
 }

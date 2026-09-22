@@ -125,14 +125,34 @@
             </div>
             <button type="button" class="btn btn--secondary btn--sm" id="presetBtn">Presets</button>
             <button type="button" class="btn btn--ghost btn--sm" id="randomBtn" title="A different design, drawn from the catalogue">Randomize</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="loupeBtn" aria-pressed="false" title="The preview at twice its size, in a box you can scroll. Microtext and hairlines read here.">Loupe 2x</button>
             <button type="button" class="btn btn--ghost btn--sm" id="exportPngBtn" title="The preview as a PNG, provenance strip included">Download PNG</button>
             <button type="button" class="btn btn--ghost btn--sm" id="exportSvgBtn" title="The preview as an SVG with the fonts inlined, provenance strip included">Download SVG</button>
           </div>
         </div>
 
         <div class="preview-stage" id="previewStage">
+          <!-- U1. On a first visit the picker is the stage (js/empty-state.js):
+               every thumbnail is drawn by the kit with the strip, so the first
+               picture a visitor sees carries the disclosure. -->
+          <div class="stage-empty" id="stageEmpty" hidden>
+            <p class="stage-empty__lede" id="stageEmptyLede">Pick the nearest. You change the words next.</p>
+            <div class="preset-grid preset-grid--stage" id="stageGrid" role="group" aria-labelledby="stageEmptyLede"></div>
+          </div>
           <div class="preview-frame" id="preview"></div>
         </div>
+
+        <!-- U3. Straight under the preview, so a warning is the first thing
+             under the drawing it is about and stays in view on a short window.
+             Each warning carries the button that repairs it; tabindex so Each warning carries the button that repairs it; tabindex so
+             focus has somewhere to land once the clicked button is redrawn. -->
+        <div class="warn-list" id="warnings" role="status" aria-live="polite" tabindex="-1"></div>
+
+        <!-- U6. The draft at the sizes it is actually seen, drawn by the same
+             wallet code Sash uses, so an author meets their name and handle
+             beside the badge, and sees where the strip stops being legible,
+             before publishing. -->
+        <div class="preview-context" id="previewContext" aria-label="Where it will live"></div>
 
         <!-- Stays on the page as long as the preview does: the drawn provenance
              strip says "parody" in the pixels, this says it in the page. -->
@@ -148,7 +168,6 @@
           preview.
         </p>
 
-        <div class="warn-list" id="warnings" role="status" aria-live="polite"></div>
       </section>
 
       <section class="studio__panel" aria-labelledby="editor-title">
@@ -157,7 +176,7 @@
         <div class="save-bar" id="saveBar">
           <div class="save-bar__state" id="saveState" role="status" aria-live="polite">Not saved yet</div>
           <div class="toolbar">
-            <button type="button" class="btn btn--ghost btn--sm" id="resetBtn" title="Forget the draft held in this browser and start from the default preset">Start over</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="resetBtn" title="Forget the draft held in this browser and pick a preset again">Start over</button>
             <button type="button" class="btn btn--secondary btn--sm" id="saveDraftBtn">Save draft</button>
             <button type="button" class="btn btn--primary btn--sm" id="publishBtn">Publish</button>
           </div>

@@ -7,12 +7,14 @@
  * that knows how a control becomes a design change.
  */
 import { state, design } from './state.js';
-import { RING_STYLES, FONT_ROLES } from './insignia/schema.js';
-import { groupsFor, pairingOptions, pairingNote } from './fields.js';
+import { RING_STYLES, FONT_ROLES, SIGNATURE_SOURCES } from './insignia/schema.js';
+import { groupsFor, pairingOptions, pairingNote, SIGNATURE_SOURCE_LABELS } from './fields.js';
 import { escHtml } from './neorgon-dom.js';
 import { getPath, setPath, opt, splitList, clone } from './utils.js';
 import { badgeFonts, certificateFonts } from './insignia/data/fonts.js';
 import { presetsFor } from './insignia/data/presets.js';
+import { artInfo, artCaption } from './art.js';
+import { applyPalette } from './palette.js';
 
 let notify = () => {};
 let onPickArt = null;
@@ -77,18 +79,28 @@ function ringsHtml(rings) {
     <span class="fld__hint">Drawn outermost first. A ring follows the silhouette rather than assuming a circle.</span></div>`;
 }
 
+/**
+ * Round 2 (C7.30): a signature can be a typed name or a handle the deployment
+ * resolves at issue. The name and role inputs stay on the row for a handle,
+ * since the role still draws ("accepted by" for a holder) and the name is kept
+ * for the day the author switches back.
+ */
 function signaturesHtml(sigs) {
   const rows = sigs.map((s, i) => `<div class="repeat__row">
     <input class="fld__input fld__input--mini" value="${escHtml(s.name)}" placeholder="Name"
       data-path="signatures.${i}.name" data-cast="str" aria-label="Signature ${i + 1} name">
     <input class="fld__input fld__input--mini" value="${escHtml(s.role)}" placeholder="Role"
       data-path="signatures.${i}.role" data-cast="str" aria-label="Signature ${i + 1} role">
+    <select class="fld__input fld__input--mini" data-path="signatures.${i}.from" data-cast="str" title="From" aria-label="Signature ${i + 1} from">
+      ${SIGNATURE_SOURCES.map((v) => opt(v, s.from || 'text', SIGNATURE_SOURCE_LABELS[v] || v)).join('')}
+    </select>
     <button type="button" class="btn btn--ghost btn--sm" data-action="sig-remove" data-index="${i}" aria-label="Remove signature ${i + 1}">Remove</button>
   </div>`).join('');
   const add = sigs.length < 2
     ? '<button type="button" class="btn btn--ghost btn--sm" data-action="sig-add">Add a signature</button>'
     : '<span class="fld__hint">Two is the most a certificate carries.</span>';
-  return `<div class="repeat"><span class="fld__label">Signatures</span>${rows}${add}</div>`;
+  return `<div class="repeat"><span class="fld__label">Signatures</span>${rows}${add}
+    <span class="fld__hint">A signature drawn from a handle is the handle itself, in the script face, with its Sash address beneath. The name is screened like the title when you publish.</span></div>`;
 }
 
 function certTextHtml(field, value) {
@@ -127,18 +139,46 @@ function sealHtml(current) {
       : 'A seal is a whole badge document, copied in at the moment you choose it.'}</span></label>`;
 }
 
+// Section 6 of the round 2 plan, verbatim. System copy: it passes the C11.7 grep.
+const ART_CAPTION = 'For your own project, community, course or meme. PNG, JPEG, WEBP, SVG or a favicon. '
+  + 'It is drawn to 512 across in your browser before it is sent; an icon of 64 pixels or less is scaled up '
+  + 'as pixel art on purpose, which is a look rather than a lossless logo. It sits inside the badge under the '
+  + 'rings, and the strip naming the origin, the issuing handle and the verify address is always drawn over it. '
+  + 'Uploading a mark you do not hold the rights to is on you, and a published template can be reviewed and taken down.';
+
+/**
+ * LOGO-05: three swatches read from the mark, offered after an upload and
+ * never applied on their own. Each swatch is an image to a reader, named with
+ * its role and its hex, since a coloured box has no text of its own.
+ */
+function paletteHtml(swatches) {
+  if (!swatches) return '';
+  const HEX = /^#[0-9a-f]{6}$/;
+  const cells = [['accent', 'Accent'], ['base', 'Base'], ['ink', 'Ink']].map(([key, label]) => {
+    const hex = HEX.test(String(swatches[key])) ? swatches[key] : '#000000';
+    return `<span class="fld__swatchwrap"><span class="fld__color" role="img" aria-label="${label}, ${hex}" style="background:${hex}"></span>
+      <code class="fld__hex">${hex}</code></span>`;
+  }).join('');
+  return `<div class="fld art__palette"><span class="fld__label">Palette from this image</span>
+    <div class="toolbar">${cells}
+      <button type="button" class="btn btn--secondary btn--sm" data-action="palette-use">Use these</button>
+    </div>
+    <span class="fld__hint">Read off the mark: the strongest colour as the accent, its opposite as the base, its darkest as the ink. Nothing changes until you use them.</span></div>`;
+}
+
 function artHtml(current) {
+  const info = artInfo(state.artUrl);
   const shown = state.artUrl
     ? `<img class="art__thumb" src="${escHtml(state.artUrl)}" alt="The image in the centre of this badge">`
     : `<span class="fld__hint">${current ? 'An image is attached. Its address is resolved when the template loads.' : 'No image yet.'}</span>`;
+  const decoded = info ? `<span class="fld__hint">${escHtml(artCaption(info))}</span>` : '';
   return `<div class="fld art"><span class="fld__label">Image</span>
-    ${shown}
+    ${shown}${decoded}
     <div class="toolbar">
       <button type="button" class="btn btn--secondary btn--sm" data-action="art-pick">Upload an image</button>
       ${current ? '<button type="button" class="btn btn--ghost btn--sm" data-action="art-clear">Remove it</button>' : ''}
     </div>
-    <span class="fld__hint">PNG, JPEG or WEBP. It is scaled to 512 across in your browser before it is sent, and it is
-    stored against the template rather than against each award, so a hundred claims serve one file.</span></div>`;
+    <span class="fld__hint">${escHtml(ART_CAPTION)}</span></div>${info ? paletteHtml(info.swatches) : ''}`;
 }
 
 function inputHtml(field, value) {
@@ -324,7 +364,14 @@ function applyAction(el, root) {
   switch (action) {
     case 'ring-add': d.rings.push(RING_DEFAULT()); break;
     case 'ring-remove': d.rings.splice(Number(el.dataset.index), 1); break;
-    case 'sig-add': d.signatures.push({ name: '', role: '' }); break;
+    case 'sig-add': d.signatures.push({ name: '', role: '', from: 'text' }); break;
+    case 'palette-use': {
+      // Never automatic: this click is the only way the swatches reach the design.
+      const info = artInfo(state.artUrl);
+      if (!info || !info.swatches) return false;
+      applyPalette(d, info.swatches);
+      break;
+    }
     case 'sig-remove': d.signatures.splice(Number(el.dataset.index), 1); break;
     case 'pairing': {
       state.pairingId = el.value;

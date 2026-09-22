@@ -1,8 +1,7 @@
 /**
- * Authoring-time warnings for the two ways a design looks right here and then
- * loses something on export. Both are amendments in CONTRACTS.md C15, both were
- * found by measuring rather than by looking, and both warn rather than block:
- * an author may want either of them on a dark ground.
+ * Authoring-time warnings for the ways a design looks right here and then
+ * loses something on export. Each was found by measuring rather than by
+ * looking, and each warns rather than blocks: an author may want any of them.
  *
  *   A27  arc text can leave the silhouette. A badge exports on a transparent
  *        ground, so text outside the shape does not look wrong in the editor and
@@ -12,9 +11,18 @@
  *   A34.1 the provenance strip's text is a fixed light colour and its plate
  *        takes the author's `palette.ink`, so a light ink is a pale line on a
  *        pale plate. The strip is the control C11.1 requires to be legible.
+ *   U3   an arc longer than its path is cut. The 48 in C1.1 is a string cap and
+ *        `arcOutside` only samples the path that exists, so a 48-character top
+ *        arc at size 40 drew as a fragment with nothing said. Chromium drops the
+ *        glyphs that fall off both ends of the path, so what survives is the
+ *        middle of the line, and the warning quotes it.
+ *   V10  arc and ribbon words can sit on a ground they do not read against.
+ *        Meme palettes put pale words on pale bases and nothing measured it.
  *
- * Nothing here draws. It reads the design, and it measures the arcs off the
- * preview the renderer already produced, so what is measured is what is drawn.
+ * Nothing here draws and nothing here repairs. Each warning carries a `kind`
+ * and the numbers it was measured from; `fixes.js` turns those into the button
+ * a warning offers. The measurements read the preview the renderer already
+ * produced, so what is measured is what is drawn.
  */
 import { validateDesign, SHAPE_IDS } from './insignia/schema.js';
 import { SHAPES } from './insignia/shapes.js';
@@ -49,6 +57,11 @@ function rgb(hex) {
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
 }
 
+/** Channels back to `#rrggbb`. */
+export function hexOf(channels) {
+  return `#${channels.map((c) => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, '0')).join('')}`;
+}
+
 /** `over` laid on `under` at `alpha`, as an opaque colour. */
 function composite(over, under, alpha) {
   const a = rgb(over);
@@ -69,6 +82,31 @@ export function contrast(a, b) {
   const la = luminance(a);
   const lb = luminance(b);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** The same ratio, for two hex colours. */
+export function hexContrast(a, b) {
+  return contrast(rgb(a), rgb(b));
+}
+
+/**
+ * Which way a colour has to move to read against `ground`: `darker` on a light
+ * ground, `lighter` on a dark one. Black and white are the two ends of the
+ * lightness axis, so whichever reads better is the direction with headroom.
+ */
+export function towardsContrast(ground) {
+  return hexContrast(ground, '#000000') >= hexContrast(ground, '#ffffff') ? 'darker' : 'lighter';
+}
+
+// The body a metal badge draws its arcs on is a gradient, not `palette.base`.
+// These are the middle stops of `METAL_STOPS` in the kit's patterns.js, which
+// that module does not export; they are the ground a contrast check should use
+// until it does. K1's material paint changes the stops and this mirror with it.
+const METAL_MIDDLE = { gold: '#d4a017', silver: '#b9c0cc', bronze: '#b3762f' };
+
+/** The colour a badge's arcs sit on: the metal's middle stop, else the base. */
+export function groundHex(badge) {
+  return METAL_MIDDLE[badge.palette.metal] || badge.palette.base;
 }
 
 /* ── the shape probe ───────────────────────────────────────────────────────── */
@@ -109,6 +147,18 @@ function inFill(target, x, y) {
   }
 }
 
+/* ── the arc geometry the renderer uses ────────────────────────────────────── */
+
+/** The radius `drawArc` gives an arc of this size on this side. */
+export function arcRadius(side, fontSize) {
+  return side === 'top' ? R - ARC_MARGIN - fontSize * 0.72 : BOTTOM_ARC_R;
+}
+
+/** The length of the semicircle an arc of this size runs along. */
+export function arcPathLength(side, fontSize) {
+  return Math.PI * Math.max(0, arcRadius(side, fontSize));
+}
+
 /* ── A27: does the arc stay on the silhouette ──────────────────────────────── */
 
 /**
@@ -120,7 +170,7 @@ function inFill(target, x, y) {
 export function arcOutside(shapeId, side, fontSize, length) {
   const target = probeFor(shapeId);
   if (!target || !(length > 0)) return 0;
-  const r = side === 'top' ? R - ARC_MARGIN - fontSize * 0.72 : BOTTOM_ARC_R;
+  const r = arcRadius(side, fontSize);
   if (!(r > 0)) return ARC_SAMPLES;
   const half = Math.min(0.5, length / (2 * Math.PI * r));
   let outside = 0;
@@ -133,6 +183,14 @@ export function arcOutside(shapeId, side, fontSize, length) {
   return outside;
 }
 
+/** The preview's `<text>` for one arc, or null when that arc is not drawn. */
+function arcText(root, side) {
+  if (!root) return null;
+  const key = side === 'top' ? 'arctop' : 'arcbot';
+  const tp = Array.from(root.querySelectorAll('textPath')).find((t) => (t.getAttribute('href') || '').includes(key));
+  return tp ? tp.parentNode : null;
+}
+
 /**
  * The drawn advance of each arc, read off the preview the renderer produced.
  * Returns `{ top, bottom }` in 512-field units, with 0 for an arc that is not
@@ -140,19 +198,14 @@ export function arcOutside(shapeId, side, fontSize, length) {
  */
 export function measureArcs(root, badge) {
   const out = { top: 0, bottom: 0 };
-  if (!root) return out;
-  for (const tp of root.querySelectorAll('textPath')) {
-    const href = tp.getAttribute('href') || '';
-    const side = href.includes('arctop') ? 'top' : href.includes('arcbot') ? 'bottom' : null;
-    if (!side || out[side]) continue;
-    const text = tp.parentNode;
-    let length = 0;
+  for (const side of ['top', 'bottom']) {
+    const text = arcText(root, side);
+    if (!text) continue;
     try {
-      length = text.getComputedTextLength();
+      out[side] = text.getComputedTextLength();
     } catch {
-      length = 0;
+      out[side] = 0;
     }
-    out[side] = length;
   }
   for (const side of ['top', 'bottom']) {
     const arc = side === 'top' ? badge?.arcs?.top : badge?.arcs?.bottom;
@@ -164,20 +217,84 @@ export function measureArcs(root, badge) {
   return out;
 }
 
+/* ── U3: is the arc longer than its path ───────────────────────────────────── */
+
+/**
+ * The part of an arc's words the engine draws when the line overruns its path,
+ * or null when the whole line fits. `length` is the drawn advance; the path is
+ * the renderer's own semicircle, read off the preview where the engine reports
+ * it and modelled from the same formula where it does not.
+ *
+ * The survivor is read per glyph where the engine measures glyphs: a glyph off
+ * the path has no extent. Where it does not, the middle of the line is kept in
+ * proportion, which is what the three engines draw.
+ */
+export function arcCut(root, arc, side, length) {
+  if (!arc || !arc.text || !(length > 0)) return null;
+  const text = arcText(root, side);
+  let pathLength = arcPathLength(side, arc.size);
+  try {
+    const href = text?.firstElementChild?.getAttribute('href');
+    const pathEl = href && root.querySelector(href);
+    if (pathEl && typeof pathEl.getTotalLength === 'function') pathLength = pathEl.getTotalLength();
+  } catch { /* the model stands */ }
+  if (!(length > pathLength + 0.5)) return null;
+
+  const words = String(arc.text);
+  let survivor = '';
+  try {
+    const n = text.getNumberOfChars();
+    for (let i = 0; i < n; i++) {
+      if (text.getExtentOfChar(i).width > 0) survivor += words[i];
+    }
+  } catch {
+    survivor = '';
+  }
+  if (!survivor.trim()) {
+    const keep = Math.max(1, Math.floor(words.length * (pathLength / length)));
+    const from = Math.floor((words.length - keep) / 2);
+    survivor = words.slice(from, from + keep);
+  }
+  return { length, pathLength, survivor: survivor.trim() };
+}
+
 /* ── the warning list ──────────────────────────────────────────────────────── */
 
 const SHAPE_NAME = (id) => (SHAPE_IDS.includes(id) ? id.replace(/-/g, ' ') : 'shape');
 
-function arcWarnings(badge, lengths, where) {
+/** What every arc warning carries for its fix: the size to shrink from and the measured advance. */
+function arcFacts(badge, side, target, length) {
+  const arc = badge.arcs[side];
+  return { target, side, size: arc.size, tracking: arc.tracking, chars: String(arc.text).length, length, shape: badge.shape };
+}
+
+function cutWarnings(badge, lengths, root, target, where) {
   const out = [];
   for (const side of ['top', 'bottom']) {
-    const arc = side === 'top' ? badge.arcs.top : badge.arcs.bottom;
+    const arc = badge.arcs[side];
+    const cut = arcCut(root, arc, side, lengths[side]);
+    if (!cut) continue;
+    out.push({
+      kind: 'arc-cut', level: 'warn', ...arcFacts(badge, side, target, lengths[side]),
+      title: `The ${side} line is cut to "${cut.survivor}"${where}`,
+      body: `Those words run ${cut.length.toFixed(0)} units along an arc ${cut.pathLength.toFixed(0)} units long, `
+        + 'so the glyphs that fall off either end of the path are not drawn at all, here or in the export. '
+        + 'Nobody reads the rest. Drop the size, or put the words on the ribbon, which takes up to 24 characters.',
+    });
+  }
+  return out;
+}
+
+function arcWarnings(badge, lengths, target, where) {
+  const out = [];
+  for (const side of ['top', 'bottom']) {
+    const arc = badge.arcs[side];
     if (!arc || !arc.text) continue;
     const outside = arcOutside(badge.shape, side, arc.size, lengths[side]);
     if (!outside) continue;
     const all = outside === ARC_SAMPLES;
     out.push({
-      level: all ? 'warn' : 'note',
+      kind: 'arc-off', level: all ? 'warn' : 'note', ...arcFacts(badge, side, target, lengths[side]),
       title: all
         ? `The ${side} arc sits off the ${SHAPE_NAME(badge.shape)}${where}`
         : `The ${side} arc runs past the ${SHAPE_NAME(badge.shape)}${where}`,
@@ -200,6 +317,14 @@ function arcWarnings(badge, lengths, where) {
 const RIBBON_TOP = 336;
 const RIBBON_BOTTOM = 394;
 
+/** The modelled reach of a bottom arc of `size` and drawn `length` into the ribbon band. */
+export function modelOverlap(size, length) {
+  const half = Math.min(0.5, (length || 0) / (2 * Math.PI * BOTTOM_ARC_R));
+  const endY = CY + BOTTOM_ARC_R * Math.cos(Math.PI * half);
+  const top = endY - size * 0.75;
+  return Math.max(0, Math.min(endY, RIBBON_BOTTOM) - Math.max(top, RIBBON_TOP));
+}
+
 /**
  * How far, in field units, the drawn bottom arc reaches into the ribbon band.
  * Read off the preview's own text node where the engine will measure, so the
@@ -207,32 +332,25 @@ const RIBBON_BOTTOM = 394;
  * geometry when it will not.
  */
 export function arcUnderRibbon(root, arc, length) {
-  let top = null;
-  let bottom = null;
-  const text = root && Array.from(root.querySelectorAll('textPath'))
-    .find((tp) => (tp.getAttribute('href') || '').includes('arcbot'))?.parentNode;
+  const text = arcText(root, 'bottom');
   if (text) {
     try {
       const box = text.getBBox();
-      if (box && box.height > 0) { top = box.y; bottom = box.y + box.height; }
+      if (box && box.height > 0) {
+        return Math.max(0, Math.min(box.y + box.height, RIBBON_BOTTOM) - Math.max(box.y, RIBBON_TOP));
+      }
     } catch { /* fall through to the model */ }
   }
-  if (top === null) {
-    const half = Math.min(0.5, (length || 0) / (2 * Math.PI * BOTTOM_ARC_R));
-    const endY = CY + BOTTOM_ARC_R * Math.cos(Math.PI * half);
-    top = endY - arc.size * 0.75;
-    bottom = endY;
-  }
-  return Math.max(0, Math.min(bottom, RIBBON_BOTTOM) - Math.max(top, RIBBON_TOP));
+  return modelOverlap(arc.size, length);
 }
 
-function ribbonWarning(badge, lengths, root, where) {
+function ribbonWarning(badge, lengths, root, target, where) {
   const arc = badge.arcs.bottom;
   if (!badge.ribbon || !arc || !arc.text) return null;
   const overlap = arcUnderRibbon(root, arc, lengths.bottom);
   if (!(overlap > 0)) return null;
   return {
-    level: 'warn',
+    kind: 'ribbon-overlap', level: 'warn', ...arcFacts(badge, 'bottom', target, lengths.bottom),
     title: `The ribbon covers the bottom arc${where}`,
     body: `The ribbon draws its plate from ${RIBBON_TOP} to ${RIBBON_BOTTOM} on the 512 field and the bottom arc `
       + `reaches ${overlap.toFixed(0)} units up into it, so the plate hides the top of those words. `
@@ -240,13 +358,51 @@ function ribbonWarning(badge, lengths, root, where) {
   };
 }
 
-function stripWarning(badge) {
+/* ── V10: do the words read against what they sit on ──────────────────────── */
+
+function textContrastWarnings(badge, target, where) {
+  const out = [];
+  const ground = groundHex(badge);
+  for (const side of ['top', 'bottom']) {
+    const arc = badge.arcs[side];
+    if (!arc || !arc.text) continue;
+    const ratio = hexContrast(arc.color, ground);
+    if (ratio >= MIN_STRIP_CONTRAST) continue;
+    out.push({
+      kind: 'arc-contrast', level: gradeFor(ratio), target, side, colorPath: `arcs.${side}.color`, ground, ratio,
+      title: `The ${side} arc is hard to read on the ${badge.palette.metal === 'none' ? 'base' : badge.palette.metal}${where}`,
+      body: `Its words and the ground under them sit at ${ratio.toFixed(1)} to 1. `
+        + 'Below 4.5 to 1 a small line goes soft on a phone and on a projector; below 3 to 1 it goes missing.',
+    });
+  }
+  if (badge.ribbon && badge.ribbon.text) {
+    const ratio = hexContrast(badge.ribbon.textColor, badge.ribbon.color);
+    if (ratio < MIN_STRIP_CONTRAST) {
+      out.push({
+        kind: 'ribbon-contrast', level: gradeFor(ratio), target, colorPath: 'ribbon.textColor', ground: badge.ribbon.color, ratio,
+        title: `The ribbon's words are hard to read on its band${where}`,
+        body: `The words and the band sit at ${ratio.toFixed(1)} to 1. The ribbon draws its own plate, `
+          + 'so this is the one line on the badge whose ground you chose outright.',
+      });
+    }
+  }
+  return out;
+}
+
+/* ── A34.1: the strip and the band ─────────────────────────────────────────── */
+
+/** The strip's contrast for a badge, as the renderer composites it today. */
+export function stripRatio(badge) {
   const plate = composite(badge.palette.ink, badge.palette.base, 0.86);
-  const line = composite('#e7e9ff', `#${plate.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`, 0.92);
-  const ratio = contrast(line, plate);
+  const line = composite('#e7e9ff', hexOf(plate), 0.92);
+  return contrast(line, plate);
+}
+
+function stripWarning(badge) {
+  const ratio = stripRatio(badge);
   if (ratio >= MIN_STRIP_CONTRAST) return null;
   return {
-    level: gradeFor(ratio),
+    kind: 'strip-contrast', level: gradeFor(ratio), target: 'badge', ratio,
     title: 'The provenance strip is hard to read',
     body: `Its text is a fixed light colour and its plate takes your ink, which puts them at `
       + `${ratio.toFixed(1)} to 1. That strip carries the origin, your handle and the address a reader `
@@ -254,20 +410,38 @@ function stripWarning(badge) {
   };
 }
 
-function bandWarning(cert) {
-  const plate = composite(cert.palette.ink, cert.palette.base, 0.1);
-  const plateHex = `#${plate.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`;
-  const worst = [['eyebrow', cert.text.eyebrow.color], ['body', cert.text.body.color]]
-    .map(([slot, colour]) => ({ slot, ratio: contrast(rgb(colour), rgb(plateHex)) }))
+/** The certificate band's worst slot: `{ slot, ratio, plate }`, the plate as hex. */
+export function bandWorst(cert) {
+  const plate = hexOf(composite(cert.palette.ink, cert.palette.base, 0.1));
+  return [['eyebrow', cert.text.eyebrow.color], ['body', cert.text.body.color]]
+    .map(([slot, colour]) => ({ slot, ratio: hexContrast(colour, plate), plate }))
     .sort((a, b) => a.ratio - b.ratio)[0];
+}
+
+function bandWarning(cert) {
+  const worst = bandWorst(cert);
   if (!worst || worst.ratio >= MIN_STRIP_CONTRAST) return null;
   return {
-    level: gradeFor(worst.ratio),
+    kind: 'band-contrast', level: gradeFor(worst.ratio), target: 'badge', slot: worst.slot, ground: worst.plate, ratio: worst.ratio,
     title: 'The provenance band is hard to read',
     body: `The band draws in the ${worst.slot} colour on a plate mixed from your base and your ink, `
       + `which puts them at ${worst.ratio.toFixed(1)} to 1. That band carries the origin, your handle `
       + 'and the verify address into the print, so it has to stay legible.',
   };
+}
+
+/* ── the list ──────────────────────────────────────────────────────────────── */
+
+/** Every warning one badge document raises, `target` naming which document it is. */
+function badgeWarnings(badge, root, target, where) {
+  const lengths = measureArcs(root, badge);
+  const out = [];
+  out.push(...cutWarnings(badge, lengths, root, target, where));
+  out.push(...arcWarnings(badge, lengths, target, where));
+  const ribbon = ribbonWarning(badge, lengths, root, target, where);
+  if (ribbon) out.push(ribbon);
+  out.push(...textContrastWarnings(badge, target, where));
+  return out;
 }
 
 /**
@@ -277,23 +451,15 @@ function bandWarning(cert) {
 export function warningsFor(design, root) {
   const out = [];
   for (const problem of validateDesign(design)) {
-    out.push({ level: 'error', title: 'Sash will refuse this design', body: problem });
+    out.push({ kind: 'refused', level: 'error', target: 'badge', title: 'Sash will refuse this design', body: problem });
   }
 
   if (design.kind === 'badge') {
-    const lengths = measureArcs(root, design);
-    out.push(...arcWarnings(design, lengths, ''));
-    const ribbon = ribbonWarning(design, lengths, root, '');
-    if (ribbon) out.push(ribbon);
+    out.push(...badgeWarnings(design, root, 'badge', ''));
     const strip = stripWarning(design);
     if (strip) out.push(strip);
   } else {
-    if (design.seal.design) {
-      const lengths = measureArcs(root, design.seal.design);
-      out.push(...arcWarnings(design.seal.design, lengths, ' on the seal'));
-      const ribbon = ribbonWarning(design.seal.design, lengths, root, ' on the seal');
-      if (ribbon) out.push(ribbon);
-    }
+    if (design.seal.design) out.push(...badgeWarnings(design.seal.design, root, 'seal', ' on the seal'));
     const band = bandWarning(design);
     if (band) out.push(band);
   }
