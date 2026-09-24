@@ -10,15 +10,17 @@
  */
 import { api, m, q, failText } from './api.js';
 import { state, design, setDesign, loadSaved, save, adoptTemplate, resetDraft } from './state.js';
-import { initEditor, renderEditor, applyPairing } from './editor.js';
+import { initEditor, renderEditor } from './editor.js';
 import { paintPreview, paintContext, fixAt, setLoupe, startFonts } from './preview.js';
 import { applyFix } from './fixes.js';
 import { firstVisit, isEmpty, showEmptyState, refreshEmptyState, leaveEmptyState, focusWords } from './empty-state.js';
 import { bindExport } from './exporting.js';
-import { presetGrid } from './render.js';
+import { openPresets, initPresetLibrary } from './preset-library.js';
+import { findPreset, keepPresetText } from './preset-store.js';
 import { openModal, closeModal } from './events.js';
 import { attachNewArt, artCaption, pickImage } from './art.js';
-import { presetDesign, randomDesign } from './insignia/data/presets.js';
+import { randomDesign } from './insignia/data/presets.js';
+import { setArtUrls } from './insignia/render.js';
 import { PUBLIC_ID_RE } from './insignia/schema.js';
 import { debounce } from './neorgon-dom.js';
 import { NeoAuth } from './neorgon-auth.js';
@@ -273,21 +275,25 @@ async function onArt(what) {
 
 /* ── presets, randomize, kind ──────────────────────────────────────────────── */
 
-function openPresets() {
-  const grid = $('presetGrid');
-  if (grid) grid.replaceChildren(presetGrid(state.kind, state.presetId));
-  openModal('presetModal');
-}
-
 /**
  * Paint a preset. From the stage's picker (U1) the preview replaces the picker
  * at once and the cursor lands in the first words field, because the words are
  * the one thing a preset leaves to the author; from the modal it closes as before.
  */
 function applyPreset(id, fromStage = false) {
-  setDesign(presetDesign(id));
+  const found = findPreset(id);
+  if (!found || found.kind !== state.kind) return;
+  const next = JSON.parse(JSON.stringify(found.design));
+  if (!fromStage && !found.local && $('keepPresetWords')?.checked) {
+    keepPresetText(next, design());
+  }
+  setDesign(next);
+  state.artRef = next.centre?.imageRef || next.seal?.design?.centre?.imageRef || null;
+  state.artUrl = found.artUrls?.[state.artRef] || null;
+  if (found.artUrls) setArtUrls(found.artUrls);
   state.presetId = id;
-  applyPairing(design(), state.pairingId);
+  state.pairingId = 'authored';
+  save();
   renderEditor(editorRoot);
   if (fromStage) {
     leaveEmptyState();
@@ -304,7 +310,7 @@ function onRandomize() {
   setDesign(randomDesign(state.kind));
   // A random design is nobody's preset, so the picker outlines nothing.
   state.presetId = null;
-  applyPairing(design(), state.pairingId);
+  state.pairingId = 'authored';
   renderEditor(editorRoot);
   repaint();
 }
@@ -381,6 +387,7 @@ function setKind(kind) {
 
 /** The segmented control, in the class and in the accessibility tree. */
 function paintKind() {
+  if ($('printCertBtn')) $('printCertBtn').hidden = state.kind !== 'certificate';
   for (const button of document.querySelectorAll('[data-kind]')) {
     const on = button.dataset.kind === state.kind;
     button.classList.toggle('is-on', on);
@@ -434,6 +441,7 @@ export async function start() {
   startFonts();
 
   initEditor(editorRoot, repaint, onArt);
+  initPresetLibrary();
   renderEditor(editorRoot);
   paintAll();
   paintSaveState();

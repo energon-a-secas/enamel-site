@@ -15,7 +15,7 @@
  * picture a visitor sees carries the strip (C11.1). Nothing here holds design
  * state: it shows or hides what the page already has.
  */
-import { presetGrid } from './render.js';
+import { paintPresetLibrary } from './preset-library.js';
 import { state, STORAGE_KEY } from './state.js';
 import { $, param } from './utils.js';
 
@@ -40,12 +40,11 @@ export function isEmpty() {
 }
 
 function fillGrid() {
-  const grid = $('stageGrid');
-  if (grid) grid.replaceChildren(presetGrid(state.kind, null));
+  paintPresetLibrary('stage');
 }
 
 /** The parts of the stage that only mean something once a design is chosen. */
-const PREVIEW_PARTS = ['preview', 'previewContext', 'warnings', 'loupeBtn'];
+const PREVIEW_PARTS = ['preview', 'previewContext', 'previewExamples', 'warnings', 'loupeBtn'];
 
 function toggle(showPicker) {
   const empty = $('stageEmpty');
@@ -73,6 +72,9 @@ export function refreshEmptyState() {
 export function leaveEmptyState() {
   if (!active) return;
   active = false;
+  // Hidden SVG defs with the same deterministic ids can steal the preview's
+  // gradients in a browser. The next visit repaints this grid from the source.
+  $('stageGrid')?.replaceChildren();
   toggle(false);
 }
 

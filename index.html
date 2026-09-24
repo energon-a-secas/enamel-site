@@ -45,6 +45,7 @@
   <!-- Fleet design tokens: canonical, do not redeclare locally (PROJECTS.md section 5) -->
   <link rel="stylesheet" href="https://cdn.neorgon.org/v1.0.0/styles/base.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/studio.css">
   <link rel="stylesheet" href="css/frame.css">
   <link rel="stylesheet" href="css/neorgon-insignia.css">
   <!-- Neorgon Header Kit (vendored; ?header=live swaps CSS to CDN). Keep after style.css, the kit owns the header. -->
@@ -123,11 +124,12 @@
               <button type="button" class="segmented__btn is-on" data-kind="badge" aria-pressed="true">Badge</button>
               <button type="button" class="segmented__btn" data-kind="certificate" aria-pressed="false">Certificate</button>
             </div>
-            <button type="button" class="btn btn--secondary btn--sm" id="presetBtn">Presets</button>
+            <button type="button" class="btn btn--secondary btn--sm" id="presetBtn">Design library</button>
             <button type="button" class="btn btn--ghost btn--sm" id="randomBtn" title="A different design, drawn from the catalogue">Randomize</button>
             <button type="button" class="btn btn--ghost btn--sm" id="loupeBtn" aria-pressed="false" title="The preview at twice its size, in a box you can scroll. Microtext and hairlines read here.">Loupe 2x</button>
             <button type="button" class="btn btn--ghost btn--sm" id="exportPngBtn" title="The preview as a PNG, provenance strip included">Download PNG</button>
             <button type="button" class="btn btn--ghost btn--sm" id="exportSvgBtn" title="The preview as an SVG with the fonts inlined, provenance strip included">Download SVG</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="printCertBtn" title="Print on A4 or choose Save as PDF" hidden>Print / PDF</button>
           </div>
         </div>
 
@@ -136,7 +138,12 @@
                every thumbnail is drawn by the kit with the strip, so the first
                picture a visitor sees carries the disclosure. -->
           <div class="stage-empty" id="stageEmpty" hidden>
-            <p class="stage-empty__lede" id="stageEmptyLede">Pick the nearest. You change the words next.</p>
+            <p class="stage-empty__lede" id="stageEmptyLede">Start with a finished design. Make it yours.</p>
+            <div class="library-tools">
+              <label class="library-search"><span class="sr-only">Search starter designs</span><input class="fld__input" id="stageSearch" type="search" placeholder="Find a design…" autocomplete="off"></label>
+              <label><span class="sr-only">Starter design style</span><select class="fld__input" id="stageStyle"><option value="all">All styles</option><option value="elegant">Elegant print</option><option value="minimal">Modern minimal</option><option value="bold">Bold digital</option><option value="saved">My presets</option></select></label>
+              <span class="library-count" id="stageCount" role="status" aria-live="polite"></span>
+            </div>
             <div class="preset-grid preset-grid--stage" id="stageGrid" role="group" aria-labelledby="stageEmptyLede"></div>
           </div>
           <div class="preview-frame" id="preview"></div>
@@ -152,7 +159,10 @@
              wallet code Sash uses, so an author meets their name and handle
              beside the badge, and sees where the strip stops being legible,
              before publishing. -->
-        <div class="preview-context" id="previewContext" aria-label="Where it will live"></div>
+        <details class="preview-examples" id="previewExamples">
+          <summary>Preview at real-world sizes</summary>
+          <div class="preview-context" id="previewContext" aria-label="Where it will live"></div>
+        </details>
 
         <!-- Stays on the page as long as the preview does: the drawn provenance
              strip says "parody" in the pixels, this says it in the page. -->
@@ -161,11 +171,7 @@
         </p>
 
         <p class="preview-note">
-          The strip along the foot is drawn by the renderer in every mode and cannot be
-          switched off. It carries the origin, your handle and the verify address into
-          the exported pixels. A PNG or SVG downloaded from here goes through the same
-          exporter as a badge in a wallet, with the preview's strip, and is named as a
-          preview.
+          Downloads include embedded fonts and a verification strip. Preview files are marked as unissued.
         </p>
 
       </section>
@@ -218,13 +224,27 @@
     <div class="modal__backdrop" data-modal-close tabindex="-1" aria-hidden="true"></div>
     <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="presetModalTitle" tabindex="-1">
       <header class="modal__header">
-        <h2 id="presetModalTitle">Start from a preset</h2>
+        <h2 id="presetModalTitle">Design library</h2>
         <button type="button" class="btn btn--ghost btn--icon" data-modal-close aria-label="Close dialog">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </header>
       <div class="modal__body">
-        <p class="section__lead">Every one of these is a finished design. Pick the nearest and change the words.</p>
+        <p class="section__lead">Elegant print, modern minimal and bold digital. Every detail is editable.</p>
+        <div class="library-tools">
+          <label class="library-search"><span class="sr-only">Search design library</span><input class="fld__input" id="presetSearch" type="search" placeholder="Find a design…" autocomplete="off"></label>
+          <label><span class="sr-only">Design style</span><select class="fld__input" id="presetStyle"><option value="all">All styles</option><option value="elegant">Elegant print</option><option value="minimal">Modern minimal</option><option value="bold">Bold digital</option><option value="saved">My presets</option></select></label>
+          <span class="library-count" id="presetCount" role="status" aria-live="polite"></span>
+        </div>
+        <label class="fld fld--check library-keep"><input type="checkbox" id="keepPresetWords" checked><span>Keep my text in matching fields</span></label>
+        <details class="library-save">
+          <summary>Save current design as a preset</summary>
+          <form class="local-preset-form" id="localPresetForm">
+          <div><h3>Keep this design</h3><p class="fld__hint">Save the current design as a reusable preset on this device.</p></div>
+          <label class="fld"><span class="sr-only">Preset name</span><input class="fld__input" id="localPresetName" placeholder="Name your preset" maxlength="60" required></label>
+          <button class="btn btn--secondary" type="submit">Save preset</button>
+          </form>
+        </details>
         <div class="preset-grid" id="presetGrid"></div>
       </div>
     </div>

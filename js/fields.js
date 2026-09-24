@@ -12,12 +12,11 @@
  * design. `editor.js` routes on that prefix and nothing else knows.
  */
 import {
-  SHAPE_IDS, METALS, PATTERN_KINDS, PIP_STYLES, FONT_ROLES,
+  METALS, PATTERN_KINDS, PIP_STYLES, FONT_ROLES,
   CERT_BACKGROUNDS, CERT_FRAMES, CATEGORIES, SPHERES, ACCESS_LEVELS, ORIENTATIONS,
   FINISH_KINDS, CENTRE_STYLES, CENTRE_FITS, CENTRE_MASKS, CENTRE_PLATES, CENTRE_TONES,
   CERT_LATENTS, SIGNATURE_SOURCES, SERIAL_STYLES,
 } from './insignia/schema.js';
-import { GLYPH_LIST } from './insignia/glyphs.js';
 import { PAIRINGS } from './insignia/data/fonts.js';
 
 export const ROLE_LABELS = {
@@ -108,7 +107,7 @@ function badgeGroups(d) {
     },
     {
       id: 'shape', title: 'Shape and colour', open: true, fields: [
-        f('shape', 'Silhouette', 'select', { options: SHAPE_IDS.map((s) => [s, s.replace(/-/g, ' ')]) }),
+        f('shape', 'Silhouette', 'elements'),
         f('palette.base', 'Base', 'color'),
         f('palette.accent', 'Accent', 'color'),
         f('palette.ink', 'Ink', 'color', { hint: 'The provenance strip is drawn on this, with light text. A light ink makes it hard to read.' }),
@@ -139,7 +138,7 @@ function badgeGroups(d) {
       id: 'centre', title: 'Centre', open: false, fields: [
         f('centre.kind', 'What sits in the middle', 'select', { options: [['glyph', 'A glyph'], ['image', 'An image'], ['none', 'Nothing']], rerender: true }),
         ...(d.centre.kind === 'glyph' ? [
-          f('centre.glyph', 'Glyph', 'select', { options: GLYPH_LIST }),
+          f('centre.glyph', 'Symbol', 'elements'),
           f('centre.color', 'Glyph colour', 'color'),
           f('centre.style', 'Glyph style', 'select', { options: labelled(CENTRE_STYLES, CENTRE_STYLE_LABELS) }),
         ] : []),
@@ -301,10 +300,11 @@ export function metaGroup(meta, design = null) {
 
 /** The font pairing control. A pairing names roles, never a family (C7.13). */
 export function pairingOptions() {
-  return PAIRINGS.map((p) => [p.id, p.name]);
+  return [['authored', 'As designed'], ...PAIRINGS.map((p) => [p.id, p.name])];
 }
 
 export function pairingNote(id) {
+  if (id === 'authored') return 'The fonts chosen for this design. Choose a pairing to restyle the typography.';
   return (PAIRINGS.find((p) => p.id === id) || PAIRINGS[0]).note;
 }
 

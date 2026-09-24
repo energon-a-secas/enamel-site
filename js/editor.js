@@ -15,6 +15,7 @@ import { badgeFonts, certificateFonts } from './insignia/data/fonts.js';
 import { presetsFor } from './insignia/data/presets.js';
 import { artInfo, artCaption } from './art.js';
 import { applyPalette } from './palette.js';
+import { elementPickerHtml, paintElements, filterSymbols } from './element-picker.js';
 
 let notify = () => {};
 let onPickArt = null;
@@ -105,9 +106,12 @@ function signaturesHtml(sigs) {
 
 function certTextHtml(field, value) {
   const p = field.path;
+  const input = field.slot === 'body'
+    ? `<textarea class="fld__input fld__area" rows="2" data-path="${p}.value" data-cast="str">${escHtml(value.value)}</textarea>`
+    : `<input class="fld__input" value="${escHtml(value.value)}" data-path="${p}.value" data-cast="str">`;
   return `<div class="certtext">
     <label class="fld"><span class="fld__label">${escHtml(field.label)}</span>
-      <input class="fld__input" value="${escHtml(value.value)}" data-path="${p}.value" data-cast="str"></label>
+      ${input}</label>
     <div class="certtext__row">
       <select class="fld__input fld__input--mini" data-path="${p}.font" data-cast="str" aria-label="${escHtml(field.label)} face">
         ${FONT_ROLES.map((r) => opt(r, value.font)).join('')}
@@ -211,6 +215,7 @@ function fieldHtml(field, d) {
       return `<label class="fld fld--check"><input type="checkbox" ${attrs(field)}${value ? ' checked' : ''}>
         <span>${escHtml(field.label)}</span></label>${hint(field)}`;
     case 'select': return selectHtml(field, value);
+    case 'elements': return elementPickerHtml(field, value);
     case 'range': return rangeHtml(field, value);
     case 'color': return colorHtml(field, value);
     case 'rings': return ringsHtml(d.rings);
@@ -227,7 +232,9 @@ function fieldHtml(field, d) {
 function pairingHtml() {
   return `<div class="editor__group"><div class="editor__body">
     <label class="fld"><span class="fld__label">Font pairing</span>
-      <select class="fld__input" data-action="pairing">${pairingOptions().map(([id, name]) => opt(id, state.pairingId, name)).join('')}</select>
+      <select class="fld__input" data-action="pairing">${pairingOptions().map(([id, name]) => id === 'authored'
+        ? `<option value="authored" disabled${state.pairingId === 'authored' ? ' selected' : ''}>As designed</option>`
+        : opt(id, state.pairingId, name)).join('')}</select>
       <span class="fld__hint">${escHtml(pairingNote(state.pairingId))}</span>
     </label></div></div>`;
 }
@@ -268,6 +275,7 @@ export function renderEditor(root) {
       <div class="editor__body">${g.fields.map((field) => fieldHtml(field, d)).join('')}</div>
     </details>`).join('');
   renderedShape = formShape(d, state.meta);
+  paintElements(root);
 
   if (focused) root.querySelector(focused)?.focus({ preventScroll: true });
 }
@@ -275,7 +283,7 @@ export function renderEditor(root) {
 /** The attribute that identifies a control across a rebuild, as a selector. */
 function focusSelector(el) {
   for (const key of ['path', 'toggle', 'action']) {
-    if (el.dataset[key]) return `[data-${key}="${el.dataset[key].replace(/"/g, '')}"]`;
+    if (el.dataset[key]) return `[data-${key}="${el.dataset[key].replace(/"/g, '')}"]${el.type === 'radio' ? `:checked` : ''}`;
   }
   return null;
 }
@@ -374,6 +382,7 @@ function applyAction(el, root) {
     }
     case 'sig-remove': d.signatures.splice(Number(el.dataset.index), 1); break;
     case 'pairing': {
+      if (el.value === 'authored') return false;
       state.pairingId = el.value;
       applyPairing(d, state.pairingId);
       break;
@@ -424,6 +433,7 @@ export function initEditor(root, onChange, onArt) {
   onPickArt = typeof onArt === 'function' ? onArt : null;
 
   const handle = (event) => {
+    if (event.target.matches('[data-symbol-search]')) { filterSymbols(event.target); return; }
     const el = event.target.closest('[data-path], [data-toggle]');
     if (!el || !root.contains(el)) return;
     if (el.dataset.toggle) {

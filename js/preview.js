@@ -13,11 +13,12 @@
  */
 import { renderSvg, ensureFonts, setArtUrls } from './insignia/render.js';
 import { renderAwardCard } from './insignia/wallet.js';
-import { preset } from './insignia/data/presets.js';
+import { findPreset as preset } from './preset-store.js';
 import { warningsFor } from './warnings.js';
 import { withFixes } from './fixes.js';
 import { state, design } from './state.js';
 import { escHtml } from './neorgon-dom.js';
+import { isolateSvg } from './svg-instance.js';
 
 const PLACEHOLDER_HANDLE = 'yourhandle';
 // A certificate draws its QR only when the provenance carries a verify URL, so a
@@ -101,11 +102,13 @@ function fluid(svg) {
 export function paintPreview(host, warnHost) {
   if (!host) return;
   const d = design();
+  host.dataset.kind = d.kind;
+  host.dataset.orientation = d.orientation || '';
   if (state.artRef && state.artUrl) setArtUrls({ [state.artRef]: state.artUrl });
 
   let svg;
   try {
-    svg = renderSvg(d, draftProvenance());
+    svg = isolateSvg(renderSvg(d, draftProvenance()));
   } catch (err) {
     // renderSvg throws only on a provenance that fails C1.3, which is this
     // page's own bug rather than the author's. Say so rather than showing an
@@ -252,6 +255,9 @@ export function paintContext(host) {
     return;
   }
   host.replaceChildren(...items);
+  for (const svg of host.querySelectorAll('svg')) {
+    if (!svg.parentElement.closest('svg')) isolateSvg(svg);
+  }
   const box = host.querySelector('.context-sheet');
   if (box) {
     box.scrollLeft = box.scrollWidth;

@@ -8,11 +8,12 @@
  * preview's, so the strip reads "preview, not yet issued" and the file name
  * says preview. Nothing here draws, and nothing here names a font.
  */
-import { exportPng, exportSvgFile, triggerDownload, slugify } from './insignia/export.js';
-import { preset } from './insignia/data/presets.js';
+import { exportPng, exportSvgFile, printRoot, triggerDownload, slugify } from './insignia/export.js';
+import { findPreset as preset } from './preset-store.js';
 import { state, design } from './state.js';
 import { draftProvenance } from './preview.js';
 import { $, showToast } from './utils.js';
+import { isolateSvg } from './svg-instance.js';
 
 /**
  * `<name>-preview`: the template's name, else the preset's, else the kind.
@@ -52,4 +53,16 @@ export function bindExport() {
   svg?.addEventListener('click', () => guarded(svg, 'SVG', async () => {
     triggerDownload(await exportSvgFile(design(), draftProvenance()), `${previewStem()}.svg`);
   }));
+  const print = $('printCertBtn');
+  print?.addEventListener('click', async () => {
+    if (print.disabled || state.kind !== 'certificate') return;
+    print.disabled = true;
+    print.textContent = 'Preparing…';
+    try {
+      const root = await printRoot(design(), draftProvenance(), { title: previewStem() });
+      isolateSvg(root.querySelector('svg'));
+      window.print();
+    } catch (err) { showToast(`The print preview could not be prepared: ${err.message}`); }
+    finally { print.disabled = false; print.textContent = 'Print / PDF'; }
+  });
 }

@@ -3,11 +3,12 @@
 // nothing here holds state: a caller passes a row in and gets a node or a
 // string of markup back.
 
-import { renderSvg } from './insignia/render.js';
-import { presetsFor } from './insignia/data/presets.js';
+import { renderSvg, setArtUrls } from './insignia/render.js';
+import { allPresets, matchesPreset } from './preset-store.js';
 import { escHtml } from './neorgon-dom.js';
 import { fmtDate, stamp } from './utils.js';
 import { previewProvenance } from './preview.js';
+import { isolateSvg } from './svg-instance.js';
 
 export const STATUS_LABEL = { draft: 'Draft', published: 'Published', archived: 'Archived' };
 export const KIND_LABEL = { badge: 'Badge', certificate: 'Certificate' };
@@ -22,7 +23,7 @@ export function thumb(design, size = 132, provenance = previewProvenance()) {
   wrap.className = 'thumb';
   wrap.style.setProperty('--thumb-size', `${size}px`);
   try {
-    const svg = renderSvg(design, provenance);
+    const svg = isolateSvg(renderSvg(design, provenance));
     svg.removeAttribute('width');
     svg.removeAttribute('height');
     wrap.appendChild(svg);
@@ -35,15 +36,17 @@ export function thumb(design, size = 132, provenance = previewProvenance()) {
 }
 
 /** The preset picker's grid, for one kind. */
-export function presetGrid(kind, currentId) {
+export function presetGrid(kind, currentId, options = {}) {
   const frag = document.createDocumentFragment();
-  for (const preset of presetsFor(kind)) {
+  for (const preset of allPresets(kind).filter(p => matchesPreset(p, options))) {
+    if (preset.artUrls) setArtUrls(preset.artUrls);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'preset';
     if (preset.id === currentId) button.classList.add('is-on');
+    button.setAttribute('aria-pressed', String(preset.id === currentId));
     button.dataset.preset = preset.id;
-    button.appendChild(thumb(preset.design, kind === 'badge' ? 132 : 168));
+    button.appendChild(thumb(preset.design, kind === 'badge' ? 150 : 260));
     const label = document.createElement('span');
     label.className = 'preset__name';
     label.textContent = preset.name;
@@ -54,7 +57,18 @@ export function presetGrid(kind, currentId) {
       note.textContent = preset.note;
       button.appendChild(note);
     }
-    frag.appendChild(button);
+    if (preset.local) {
+      const wrap = document.createElement('div');
+      wrap.className = 'preset-saved';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn--ghost btn--sm preset-remove';
+      remove.dataset.removePreset = preset.id;
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', `Remove ${preset.name} from my presets`);
+      wrap.append(button, remove);
+      frag.appendChild(wrap);
+    } else frag.appendChild(button);
   }
   return frag;
 }

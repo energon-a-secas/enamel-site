@@ -37,7 +37,7 @@ export const state = {
   },
   meta: blankMeta(),
   presetId: DEFAULT_PRESET.badge,
-  pairingId: 'classic',
+  pairingId: 'authored',
   // Set once the design has been saved to Sash at least once.
   templateId: null,
   publicId: null,
@@ -118,6 +118,7 @@ export function resetDraft(s = state) {
   };
   s.meta = blankMeta();
   s.presetId = DEFAULT_PRESET[s.kind];
+  s.pairingId = 'authored';
   s.templateId = null;
   s.publicId = null;
   s.templateKind = null;

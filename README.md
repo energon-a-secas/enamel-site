@@ -30,7 +30,7 @@ Design a badge or a certificate from a preset, save versions, publish it, and ha
 
 ## Overview
 
-Enamel is the studio half of Sash. You pick one of 24 finished designs, change
+Enamel is the studio half of Sash. You pick one of 44 finished designs, change
 the words, and you have something worth handing out in about half a minute. Then
 you publish it and mint a claim link with an expiry and a seat limit, and the
 people who follow that link hold the badge in their own wallet on
@@ -48,11 +48,19 @@ it off, which is the point.
 
 ## Features
 
-- **A parametric editor, not a canvas** -- fifteen silhouettes, eight patterns,
+- **A parametric editor, not a canvas** -- fifteen silhouettes, twelve patterns,
   ring styles, metals, pips, arc text, a ribbon and a centre glyph or image, each
   one a field in a design document rather than a shape you drag.
-- **28 finished presets and a randomize control** -- sixteen badges, twelve
-  certificates and ten font pairings. A pairing names a role, never a family.
+- **44 finished presets and a searchable design library** -- twenty-four badges,
+  twenty certificates and ten font pairings. Browse elegant print, modern minimal
+  and bold digital styles. Presets retain their authored typography; changing
+  the pairing is an explicit choice.
+- **A local vector library** -- visual pickers for fifteen silhouettes and 52
+  symbols, including five original ornaments alongside the existing Lucide set.
+  These are shipped locally, with no icon service or runtime dependency.
+- **Reusable personal presets** -- keep up to forty designs on this device
+  without signing in. They survive reloads independently of the working draft.
+  Switching a built-in design can preserve text in matching fields.
 - **Versions that are frozen once written** -- publishing writes a version and
   every award pins the version it was issued from, so a later edit never changes
   a badge somebody already holds.
@@ -62,7 +70,9 @@ it off, which is the point.
   leaving the silhouette (it vanishes on export against a light page) and a
   provenance strip too pale to read.
 - **Certificates at a fixed A4 aspect** -- both orientations, with an embedded
-  badge as the seal and a QR of the verify address.
+  badge as the seal and a QR of the verify address. Long names and titles fit
+  their margins; body copy wraps to two lines. Print / PDF opens the browser's
+  A4 print dialog, where you can choose Save as PDF.
 - **A public catalogue** -- every published Neorgon and community template,
   readable with no account, each one a link into the studio.
 - **PNG and SVG downloads of the draft** -- through the exporter Sash uses,
@@ -76,12 +86,19 @@ ES modules require an HTTP server (not `file://`):
 
 ```bash
 make serve            # http://localhost:8885
+make test             # Preset, typography and local-library regression checks
+make test-browser     # Live studio flows, using the monorepo's Playwright install
 ```
 
 There is nothing else to start. Every page names the Convex deployment in a
 `<meta name="neo-convex-url">`, and that deployment belongs to
 `projects/sash-site/convex/`, so a read of a published template works from the
 first load.
+
+Browser checks also support `BROWSER=firefox` or `BROWSER=webkit`,
+`STUDIO_URL`, `ARTIFACT_DIR`, and a `PLAYWRIGHT_MODULE` module path when run
+outside the monorepo. Screenshots, PNG/SVG downloads and a sample PDF are
+written to `/tmp/enamel-studio-checks` by default.
 
 **Sign-in is the Neorgon Auth Kit, and it does not work on localhost.** The
 site carries the fleet's production Clerk key, and Clerk refuses a production
