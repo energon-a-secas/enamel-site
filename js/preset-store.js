@@ -44,7 +44,8 @@ export function removePersonalPreset(id) {
 }
 
 export function matchesPreset(p, { query = '', style = 'all' } = {}) {
-  const search = `${p.name} ${p.note || ''} ${p.design.shape || ''} ${p.design.centre?.glyph || ''}`.toLowerCase();
+  const search = [p.name, p.note, p.style, p.design.shape, p.design.centre?.glyph,
+    ...(Array.isArray(p.tags) ? p.tags : [])].join(' ').toLowerCase();
   const category = p.style || (p.kind === 'badge' ? 'bold' : ['graphite', 'cold-print', 'dry-run'].includes(p.id) ? 'minimal' : 'bold');
   return (!query.trim() || search.includes(query.trim().toLowerCase())) && (style === 'all' || category === style);
 }

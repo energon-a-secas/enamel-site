@@ -16,7 +16,7 @@ up with the typing.
 
 **The scene:** a laptop on a Thursday afternoon, ten minutes before the retro,
 with a name already in mind and no design skill claimed. The author picks the
-nearest of 44 finished presets, changes the words, presses Publish, and pastes a
+nearest of 60 finished presets, changes the words, presses Publish, and pastes a
 claim link into the channel.
 
 **What done looks like:** a published template with a claim link in the clipboard,

@@ -18,6 +18,11 @@ descriptions. Keep library filters and reusable local presets beside the
 existing preset workflow. Selected controls use an outline and explicit state,
 not color alone. All controls work with a keyboard and at phone widths.
 
+Futuristic artifacts borrow from terminals, lab reports and telemetry: fine
+geometry, deliberate signal colors and clear monospaced labels. Pair dark
+console designs with light technical sheets. Technology symbols are local
+vectors and the same editable marks appear in badges and certificate seals.
+
 Artifact colors remain six-digit hex because that is the persisted design
 schema. New interface colors should use existing fleet tokens. Vector elements
 belong to the canonical Insignia Kit and are synced into Enamel and Sash. Keep

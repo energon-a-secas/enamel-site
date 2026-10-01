@@ -13,7 +13,13 @@ page.on('pageerror', err => errors.push(err.message));
 
 try {
   await page.goto(base, { waitUntil: 'networkidle' });
+  await page.locator('#stageStyle').selectOption('futuristic');
+  assert.equal(await page.locator('#stageGrid [data-preset]').count(), 8);
+  assert.equal(await page.locator('#stageGrid [data-preset="ghost-shell"]').count(), 1);
   await page.getByRole('button', { name: 'Certificate', exact: true }).click();
+  await page.locator('#stageStyle').selectOption('futuristic');
+  assert.equal(await page.locator('#stageGrid [data-preset]').count(), 8);
+  assert.equal(await page.locator('#stageGrid [data-preset="chaos-field-report"]').count(), 1);
   await page.locator('#stageStyle').selectOption('minimal');
   assert.equal(await page.locator('#stageGrid [data-preset="swiss-record"]').count(), 1);
   assert.equal(await page.locator('#stageGrid [data-preset="ivory-honours"]').count(), 0);
@@ -35,6 +41,18 @@ try {
   }), 'script descenders must clear a two-line description');
   await page.locator('[data-path="text.holder.value"]').fill('Alexandra María Fernández de la Cruz');
   await page.getByRole('button', { name: 'Design library', exact: true }).click();
+  await page.locator('#presetStyle').selectOption('futuristic');
+  await page.locator('#presetSearch').fill('chaos engineering');
+  await page.waitForFunction(() => document.querySelectorAll('#presetGrid [data-preset]').length === 4);
+  assert.equal(await page.locator('#presetGrid [data-preset="chaos-field-report"]').count(), 1);
+  assert.equal(await page.locator('#presetGrid [data-preset="ghost-shell-credential"]').count(), 0);
+  await page.locator('#presetSearch').fill('hacking');
+  await page.locator('#presetGrid [data-preset="ghost-shell-credential"]').waitFor();
+  await page.locator('#presetGrid [data-preset="ghost-shell-credential"]').click();
+  assert.equal(await page.locator('[data-path="text.holder.value"]').inputValue(), 'Alexandra María Fernández de la Cruz');
+  assert.equal(await page.locator('[data-path="text.title.font"]').inputValue(), 'mono');
+  await page.getByRole('button', { name: 'Design library', exact: true }).click();
+  await page.locator('#presetStyle').selectOption('all');
   await page.locator('#presetSearch').fill('Swiss');
   await page.locator('#presetGrid [data-preset="swiss-record"]').click();
   assert.equal(await page.locator('[data-path="text.holder.value"]').inputValue(), 'Alexandra María Fernández de la Cruz');

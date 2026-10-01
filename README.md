@@ -30,7 +30,7 @@ Design a badge or a certificate from a preset, save versions, publish it, and ha
 
 ## Overview
 
-Enamel is the studio half of Sash. You pick one of 44 finished designs, change
+Enamel is the studio half of Sash. You pick one of 60 finished designs, change
 the words, and you have something worth handing out in about half a minute. Then
 you publish it and mint a claim link with an expiry and a seat limit, and the
 people who follow that link hold the badge in their own wallet on
@@ -51,12 +51,14 @@ it off, which is the point.
 - **A parametric editor, not a canvas** -- fifteen silhouettes, twelve patterns,
   ring styles, metals, pips, arc text, a ribbon and a centre glyph or image, each
   one a field in a design document rather than a shape you drag.
-- **44 finished presets and a searchable design library** -- twenty-four badges,
-  twenty certificates and ten font pairings. Browse elegant print, modern minimal
-  and bold digital styles. Presets retain their authored typography; changing
+- **60 finished presets and a searchable design library** -- thirty-two badges,
+  twenty-eight certificates and ten font pairings. Browse futuristic, elegant
+  print, modern minimal and bold digital styles, or search themes such as hacking,
+  chaos engineering and recovery. Presets retain their authored typography; changing
   the pairing is an explicit choice.
-- **A local vector library** -- visual pickers for fifteen silhouettes and 52
-  symbols, including five original ornaments alongside the existing Lucide set.
+- **A local vector library** -- visual pickers for fifteen silhouettes and 58
+  symbols, including five original ornaments and six technology symbols alongside
+  the existing Lucide set.
   These are shipped locally, with no icon service or runtime dependency.
 - **Reusable personal presets** -- keep up to forty designs on this device
   without signing in. They survive reloads independently of the working draft.
